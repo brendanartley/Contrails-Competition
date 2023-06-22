@@ -6,15 +6,14 @@ import torch.nn as nn
 import torch.optim as optim
 import torchmetrics
 import torchinfo
-import torch.nn.functional as F
 
-from timm.scheduler.cosine_lr import CosineLRScheduler
+import timm
 
 import pandas as pd
 import numpy as np
 import segmentation_models_pytorch as smp
 
-from PIL import Image
+from .models.timm_unet import TimmUnet
 
 class ContrailsDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, val_fold, train=True, transform=None):
@@ -106,6 +105,7 @@ class ContrailsModule(pl.LightningModule):
         lr: float,
         model_save_dir: str,
         model_name: str,
+        model_type: str,
         run_name: str,
         save_model: bool,
         epochs: int,
@@ -121,7 +121,15 @@ class ContrailsModule(pl.LightningModule):
         self.loss_fn = self._init_loss_fn()
 
     def _init_model(self):
-        if self.hparams.model_name in ["efficientnet-b0", "efficientnet-b1", "efficientnet-b2", "efficientnet-b3"]:
+        if self.hparams.model_type == "timm":
+            # Timm Encoders
+            model = TimmUnet(
+                backbone=self.hparams.model_name, 
+                in_chans=3,
+                num_classes=1,
+            )
+        elif self.hparams.model_type == "seg":
+            # Segmentation Models
             model = smp.Unet(
                 encoder_name = self.hparams.model_name, 
                 encoder_weights = "imagenet", 
@@ -129,10 +137,7 @@ class ContrailsModule(pl.LightningModule):
                 classes = 1, 
                 activation =  None,
             )
-        else:
-            raise ValueError(f"{self.hparams.model_name} is not a valid model")
-        
-        # torchinfo.summary(model)
+
         return model
     
     def _init_optimizer(self):
@@ -149,7 +154,7 @@ class ContrailsModule(pl.LightningModule):
                 eta_min = self.hparams.lr_min,
                 )
         elif self.hparams.scheduler == "CosineAnnealingLRWarmup":
-            return CosineLRScheduler(
+            return timm.scheduler.cosine_lr.CosineLRScheduler(
                 optimizer, 
                 t_initial = self.trainer.estimated_stepping_batches,
                 warmup_t = self.trainer.estimated_stepping_batches//25,

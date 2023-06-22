@@ -1,18 +1,22 @@
-from contrails_segmentation.train import train
+from contrails_pl.train import train
 import argparse
 from types import SimpleNamespace
 
 # default configuration parameters
 config = SimpleNamespace(
-    data_dir = "/data/bartley/gpu_test/contrails-images-ash-color/",    
-    model_save_dir = "/data/bartley/gpu_test/models/segmentation/",
-    model_name = "efficientnet-b0",
     project = "Contrails-ICRGW",
+    # data_dir = "/data/bartley/gpu_test/contrails-images-ash-color/",    
+    data_dir = "/data/bartley/gpu_test/my-contrails-data/",
+    model_save_dir = "/data/bartley/gpu_test/models/segmentation/",
+    torch_cache = "/data/bartley/gpu_test/TORCH_CACHE/",
+    model_name = "efficientnetv2_rw_s.ra2_in1k",
+    model_type = "timm",
     save_model = False,
     batch_size = 32,
-    epochs = 1,
+    epochs = 5,
     val_fold = 0,
     num_folds = 5,
+    all_folds = False,
     lr = 2e-4,
     lr_min = 1e-8,
     num_cycles = 5,
@@ -35,15 +39,18 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--scheduler", type=str, default=config.scheduler, help="Learning rate scheduler for the model to use.")
     parser.add_argument("--model_name", type=str, default=config.model_name, help="Encoder model to use for training.")
+    parser.add_argument("--model_type", type=str, default=config.model_type, help="Model type (seg/timm).")
     parser.add_argument("--data_dir", type=str, default=config.data_dir, help="Data directory path.")
     parser.add_argument('--train_all', action='store_true', help='Indicator wether to train on all the data.')
     parser.add_argument('--fast_dev_run', action='store_true', help='Check PL modules are set up correctly.')
-    parser.add_argument('--all_folds', action='store_true', help='Do full K-Fold validation.')
+    # parser.add_argument('--all_folds', action='store_true', help='Do full K-Fold validation.')
+    parser.add_argument('--all_folds', type=bool, help='Do full K-Fold validation.')
     parser.add_argument("--overfit_batches", type=int, default=config.overfit_batches, help="Num of batches to overfit (sanity check).")
     parser.add_argument('--no_wandb', action='store_true', help='Wether to log with weights and biases.')
     parser.add_argument("--seed", type=int, default=config.seed, help="Seed for reproducability.")
     parser.add_argument("--batch_size", type=int, default=config.batch_size, help="Num data points per batch.")
     parser.add_argument("--accumulate_grad_batches", type=int, default=config.accumulate_grad_batches, help="Number of steps before each optimizer step.")
+    parser.add_argument("--log_every_n_steps", type=int, default=config.log_every_n_steps, help="Logs every N steps.")
     parser.add_argument("--epochs", type=int, default=config.epochs, help="Number of epochs to train.")
     parser.add_argument("--lr", type=float, default=config.lr, help="Starting learning rate for the model.")
     parser.add_argument("--lr_min", type=float, default=config.lr_min, help="Lowest allowed learning rate for the model.")

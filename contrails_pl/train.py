@@ -1,22 +1,29 @@
 import lightning.pytorch as pl
 import wandb
-from contrails_segmentation.modules import ContrailsModule, ContrailsDataModule
-from contrails_segmentation.helpers import load_logger_and_callbacks
-
 import uuid
+import torch
+
+from contrails_pl.modules import ContrailsModule, ContrailsDataModule
+from contrails_pl.helpers import load_logger_and_callbacks
+
 
 def train(
         config,
 ):
+    # Seed
     pl.seed_everything(config.seed, workers=True)
 
+    # Set torch cache location
+    torch.hub.set_dir(config.torch_cache)
+
+    # Limits CPU if doing dev run
     if config.fast_dev_run == True:
         config.num_workers = 1
 
     # Optional: Full K-Fold cross validation
     if config.all_folds == True:
         num_iters = config.num_folds
-        group = uuid.uuid4().hex[:16] # Create random group name
+        group = config.model_name + "_" + uuid.uuid4().hex[:8] # Create random group name
     else:
         num_iters = 1
         group = None
@@ -48,6 +55,7 @@ def train(
             lr_min = config.lr_min,
             model_save_dir = config.model_save_dir,
             model_name = config.model_name,
+            model_type = config.model_type,
             run_name = logger._experiment.name if logger else None,
             save_model = config.save_model,
             epochs = config.epochs,
