@@ -2,6 +2,7 @@ import lightning.pytorch as pl
 import wandb
 import uuid
 import torch
+import os
 
 from contrails_pl.modules import ContrailsModule, ContrailsDataModule
 from contrails_pl.helpers import load_logger_and_callbacks
@@ -19,6 +20,10 @@ def train(
     # Limits CPU if doing dev run
     if config.fast_dev_run == True:
         config.num_workers = 1
+
+    # Create directory for saving predictions
+    if not os.path.exists(config.preds_dir):
+        os.mkdir(config.preds_dir)
 
     # Optional: Full K-Fold cross validation
     if config.all_folds == True:
@@ -52,13 +57,17 @@ def train(
                 lr_min = config.lr_min,
                 model_save_dir = config.model_save_dir,
                 model_name = config.model_name,
+                preds_dir = config.preds_dir,
                 model_type = config.model_type,
+                model_weights = config.model_weights,
                 run_name = logger._experiment.name if logger else None,
-                save_model = config.save_model,
+                save_weights = config.save_weights,
+                save_preds = config.save_preds,
                 epochs = config.epochs,
                 scheduler = config.scheduler,
                 fast_dev_run = config.fast_dev_run,
                 num_cycles = config.num_cycles,
+                val_fold = config.val_fold,
             )
 
             # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark
@@ -93,7 +102,6 @@ def train(
             batch_size = config.batch_size,
             num_workers = config.num_workers,
             val_fold = config.val_fold,
-            rgb_recipe = [config.r1, config.r2, config.g1, config.g2, config.b1, config.b2, config.gamma1, config.gamma2, config.gamma3],
             )
 
         logger, callbacks = load_logger_and_callbacks(
@@ -114,13 +122,17 @@ def train(
             lr_min = config.lr_min,
             model_save_dir = config.model_save_dir,
             model_name = config.model_name,
+            preds_dir = config.preds_dir,
             model_type = config.model_type,
+            model_weights = config.model_weights,
             run_name = logger._experiment.name if logger else None,
-            save_model = config.save_model,
+            save_weights = config.save_weights,
+            save_preds = config.save_preds,
             epochs = config.epochs,
             scheduler = config.scheduler,
             fast_dev_run = config.fast_dev_run,
             num_cycles = config.num_cycles,
+            val_fold = config.val_fold,
         )
 
         # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark
@@ -142,5 +154,6 @@ def train(
             gradient_clip_val = 1.0,
         )
         trainer.fit(module, datamodule=data_module)
+        trainer.validate(module, datamodule=data_module)
 
     return
