@@ -16,11 +16,12 @@ import segmentation_models_pytorch as smp
 from .models.timm_unet import TimmUnet
 
 class ContrailsDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, val_fold, train=True, transform=None):
+    def __init__(self, data_dir, val_fold, rgb_recipe, train=True, transform=None):
         self.data_dir = data_dir
         self.trn = train
         self.val_fold = val_fold
         self.records = self.load_records()
+        self.rgb_recipe = rgb_recipe
 
     def load_records(self):
         # OOF Validation
@@ -37,19 +38,67 @@ class ContrailsDataset(torch.utils.data.Dataset):
         con_path = self.data_dir + "contrails/" + fpath + ".npy"
         con = np.load(str(con_path))
         
-        # 4th dimension is the binary mask (label)
-        img = con[..., :-1]
-        label = con[..., -1]
-        
-        img = torch.tensor(img)
-        label = torch.tensor(label)
-    
-        img = img.permute(2, 0, 1)
+        if self.data_dir == "/data/bartley/gpu_test/my-raw-contrails-data/":
+            # Extracting data
+            img = self.make_rgb_recipe(con)
+            label = con[..., -1]
             
-        return img.float(), label.int()
+            # Convert to tensors
+            img = torch.tensor(img)
+            label = torch.tensor(label)
+
+            img = img.permute(2, 0, 1)
+
+            return img.float(), label.int()
+        else:
+            # 4th dimension is the binary mask (label)
+            img = con[..., :-1]
+            label = con[..., -1]
+            
+            img = torch.tensor(img)
+            label = torch.tensor(label)
+
+            # (256, 256, 3) -> (3, 256, 256)
+            img = img.permute(2, 0, 1)
+                
+            return img.float(), label.int()
     
     def __len__(self):
         return len(self.records)
+
+    def normalize_range(self, data, bounds):
+        """Maps data to the range [0, 1]."""
+        data = np.clip(data, bounds[0], bounds[1]) 
+        return (data - bounds[0]) / (bounds[1] - bounds[0])
+
+    def make_rgb_recipe(self, data):
+        # Extract bands
+        b11 = data[..., 0]
+        b14 = data[..., 1]
+        b15 = data[..., 2]
+
+        # Range / Bounds of each channel
+        R_BOUNDS = (self.rgb_recipe[0], self.rgb_recipe[1])
+        G_BOUNDS = (self.rgb_recipe[2], self.rgb_recipe[3])
+        B_BOUNDS = (self.rgb_recipe[4], self.rgb_recipe[5])
+        
+        # Normalize range
+        r = self.normalize_range(b15 - b14, R_BOUNDS)
+        g = self.normalize_range(b14 - b11, G_BOUNDS)
+        b = self.normalize_range(b14, B_BOUNDS)
+
+        # Gamma Adjustment
+        gamma_r = self.rgb_recipe[6]
+        gamma_g = self.rgb_recipe[7]
+        gamma_b = self.rgb_recipe[8]
+        r = np.power(r, 1.0/gamma_r)
+        g = np.power(g, 1.0/gamma_g)
+        b = np.power(b, 1.0/gamma_b)
+
+        # Combine final img
+        img = np.clip(np.stack([r, g, b], axis=2), 0, 1)
+        # img = img.astype(np.float16)
+        return img
 
 class ContrailsDataModule(pl.LightningDataModule):
     def __init__(
@@ -58,6 +107,7 @@ class ContrailsDataModule(pl.LightningDataModule):
         batch_size: int,
         num_workers: int,
         val_fold: int,
+        rgb_recipe: list,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -77,6 +127,7 @@ class ContrailsDataModule(pl.LightningDataModule):
             data_dir=self.hparams.data_dir, 
             val_fold=self.hparams.val_fold,
             train=train, 
+            rgb_recipe=self.hparams.rgb_recipe,
             )
     
     def train_dataloader(self):

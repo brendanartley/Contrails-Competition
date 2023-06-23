@@ -2,20 +2,20 @@
 
 Code for ICRGW.
 
-EfficientNetB6 is the max size for efficientnet models (without fancy tricks).
+Test w/ only contrails data (1/2 the size), and train final model on all the data.
 
-Test w/ only contrails data, and train final model on all the data.
+### Ideas / TODO
 
-### Ideas
+- DepthwiseConv2D layer using the two neigbhouring frames
+- Create different color maps. Ash false-color might not be optimal.. (should be able to automate this)
+    - use 1000k img subset, and V2_tiny. Should be quick enough.
+- Write predictions to a file and look at correlation between model predictions.
+- Fix KFold w/ Sweeps Error
+- Set up auto color generation process (should be a dataloader not preprocessing)
 
-- DepthwiseConv2D layer using the the two neigbhouring frames
-- Look at RegNext
-- Mix Vision Transformer 
-    - B1 == effnetb3-4
-    - B2 == effnetb5
-    - B3 == effnetb6
-    - B4 == effnetb7
-    - B5 == effnetb8
+Other potential color schemes
+- NGFS Microphysics RGB (NOAA)
+
 
 ### EfficientNet Sizes
 
@@ -49,23 +49,24 @@ Segmentation Models Documentation: https://segmentation-modelspytorch.readthedoc
 
 ### Commands
 
-CUDA_VISIBLE_DEVICES=0 python main.py --model_type="timm" --model_name="efficientnetv2_rw_t.ra2_in1k" --all_folds=True && \
 CUDA_VISIBLE_DEVICES=0 python main.py --model_type="timm" --model_name="efficientnetv2_rw_s.ra2_in1k" --all_folds=True && \
-CUDA_VISIBLE_DEVICES=0 python main.py --model_type="timm" --model_name="efficientnetv2_rw_m.agc_in1k" --all_folds=True
 
+CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="efficientnetv2_rw_t.ra2_in1k" --all_folds=True && \
+CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="efficientnetv2_rw_m.agc_in1k" --all_folds=True
 
-CUDA_VISIBLE_DEVICES=0 python main.py --model_type="seg" --model_name="mit_b6" --no_wandb
-CUDA_VISIBLE_DEVICES=1 python main.py --model_type="seg" --model_name="mit_b4" --no_wandb
-CUDA_VISIBLE_DEVICES=2 python main.py --model_type="seg" --model_name="mit_b5" --no_wandb
+CUDA_VISIBLE_DEVICES=3 python main.py --model_type="seg" --model_name="mit_b4" --all_folds=True
 
-CUDA_VISIBLE_DEVICES=0 python main.py --epochs=5 --model_name="efficientnet-b0" --all_folds
-CUDA_VISIBLE_DEVICES=1 python main.py --epochs=5 --model_name="efficientnet-b1" --all_folds
-CUDA_VISIBLE_DEVICES=2 python main.py --epochs=5 --model_name="efficientnet-b2" --all_folds
-CUDA_VISIBLE_DEVICES=3 python main.py --epochs=5 --model_name="efficientnet-b3" --all_folds
+CUDA_VISIBLE_DEVICES=3 python main.py --model_type="seg" --model_name="mit_b1" --all_folds=True && \
+CUDA_VISIBLE_DEVICES=3 python main.py --model_type="seg" --model_name="timm-regnetx_032" --all_folds=True && \
 
-CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/hwsqaxzv
-CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/hwsqaxzv
-CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/hwsqaxzv
+CUDA_VISIBLE_DEVICES=1 python main.py --model_type="timm" --model_name="convnextv2_tiny.fcmae_ft_in1k" --fast_dev_run
 
-CUDA_VISIBLE_DEVICES=3 python main.py --epochs=5 --model_name="efficientnet-b0" --all_folds
-CUDA_VISIBLE_DEVICES=3 python main.py --epochs=5 --model_name="efficientnet-b7" --all_folds --batch_size=16 --lr=1e-4 --log_every_n_steps=20
+CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW-RGB/vqyx2gfk
+CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW-RGB/vqyx2gfk
+CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW-RGB/vqyx2gfk
+CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW-RGB/vqyx2gfk
+
+CUDA_VISIBLE_DEVICES=0 python main.py --model_type="timm" --model_name="efficientnetv2_rw_t.ra2_in1k" --data_dir="/data/bartley/gpu_test/my-raw-contrails-data/"
+CUDA_VISIBLE_DEVICES=1 python main.py --model_type="timm" --model_name="efficientnetv2_rw_t.ra2_in1k" --data_dir="/data/bartley/gpu_test/my-ash-contrails-data/"
+CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="efficientnetv2_rw_t.ra2_in1k" --data_dir="/data/bartley/gpu_test/my-raw-contrails-data/" --fast_dev_run
+

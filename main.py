@@ -6,10 +6,10 @@ from types import SimpleNamespace
 config = SimpleNamespace(
     project = "Contrails-ICRGW",
     # data_dir = "/data/bartley/gpu_test/contrails-images-ash-color/",    
-    data_dir = "/data/bartley/gpu_test/my-contrails-data/",
+    data_dir = "/data/bartley/gpu_test/my-ash-contrails-data/",
     model_save_dir = "/data/bartley/gpu_test/models/segmentation/",
     torch_cache = "/data/bartley/gpu_test/TORCH_CACHE/",
-    model_name = "efficientnetv2_rw_s.ra2_in1k",
+    model_name = "efficientnetv2_rw_t.ra2_in1k",
     model_type = "timm",
     save_model = False,
     batch_size = 32,
@@ -21,6 +21,16 @@ config = SimpleNamespace(
     lr_min = 1e-8,
     num_cycles = 5,
     scheduler = "CosineAnnealingLR",
+    # -- RGB Recipe Tests --
+    r1 = -4,
+    r2 = 2,
+    g1 = -4,
+    g2 = 5,
+    b1 = 243,
+    b2 = 303,
+    gamma1 = 1.0,
+    gamma2 = 1.0,
+    gamma3 = 1.0,
     # -- Trainer Config --
     accelerator = "gpu",
     fast_dev_run = False,
@@ -37,6 +47,17 @@ config = SimpleNamespace(
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    # ----- RGB tests -----
+    parser.add_argument("--r1", type=float, default=config.r1, help=".")
+    parser.add_argument("--r2", type=float, default=config.r2, help=".")
+    parser.add_argument("--g1", type=float, default=config.g1, help=".")
+    parser.add_argument("--g2", type=float, default=config.g2, help=".")
+    parser.add_argument("--b1", type=float, default=config.b1, help=".")
+    parser.add_argument("--b2", type=float, default=config.b2, help=".")
+    parser.add_argument("--gamma1", type=float, default=config.gamma1, help=".")
+    parser.add_argument("--gamma2", type=float, default=config.gamma2, help=".")
+    parser.add_argument("--gamma3", type=float, default=config.gamma3, help=".")
+    # ----- End RGB tests -----
     parser.add_argument("--scheduler", type=str, default=config.scheduler, help="Learning rate scheduler for the model to use.")
     parser.add_argument("--model_name", type=str, default=config.model_name, help="Encoder model to use for training.")
     parser.add_argument("--model_type", type=str, default=config.model_type, help="Model type (seg/timm).")
