@@ -14,23 +14,39 @@ import numpy as np
 import segmentation_models_pytorch as smp
 
 from .models.timm_unet import TimmUnet
+from .models.my_models import CustomUnet
 
 class ContrailsDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, val_fold, train=True, transform=None):
+    def __init__(self, data_dir, val_fold, train_all, comp_val, train=True, transform=None):
         self.data_dir = data_dir
         self.trn = train
         self.val_fold = val_fold
-        self.records = self.load_records()
+        self.records = self.load_records(train_all, comp_val)
 
-    def load_records(self):
-        # OOF Validation
+    def load_records(self, train_all, comp_val):
+
+        # COMPETITION validation set
+        if comp_val == True:
+            if self.trn == False:
+                df = pd.read_csv(self.data_dir + "valid_df.csv")
+                return df["record_id"].values
+        
         df = pd.read_csv(self.data_dir + "train_df.csv")
-        if self.trn == True:
-            df = df[df.fold != self.val_fold]
-        else:
-            df = df[df.fold == self.val_fold]
 
-        return df["record_id"].values
+        # Train on all data
+        if train_all == True:
+            if self.trn == False:
+                return [], []
+            else:
+                return df["record_id"].values
+            
+        # OOF Validation
+        else:
+            if self.trn == True:
+                df = df[df.fold != self.val_fold]
+            else:
+                df = df[df.fold == self.val_fold]
+            return df["record_id"].values
     
     def __getitem__(self, index):
         fpath = str(self.records[index])
@@ -59,6 +75,8 @@ class ContrailsDataModule(pl.LightningDataModule):
         batch_size: int,
         num_workers: int,
         val_fold: int,
+        train_all: bool,
+        comp_val: bool,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -72,6 +90,7 @@ class ContrailsDataModule(pl.LightningDataModule):
         if stage == "fit" or stage is None:
             self.train_dataset = self._dataset(train=True, transform=self.train_transform)
             self.val_dataset = self._dataset(train=False, transform=self.val_transform)
+
         elif stage == "validate":
             self.val_dataset = self._dataset(train=False, transform=self.val_transform)
             
@@ -79,19 +98,19 @@ class ContrailsDataModule(pl.LightningDataModule):
         return ContrailsDataset(
             data_dir=self.hparams.data_dir, 
             val_fold=self.hparams.val_fold,
-            train=train, 
+            train=train,
+            train_all=self.hparams.train_all,
+            comp_val=self.hparams.comp_val,
             )
     
     def train_dataloader(self):
         return self._dataloader(self.train_dataset, train=True)
     
     def val_dataloader(self):
-        return self._dataloader(self.val_dataset, train=False)
-        # If doing train_all, do a final validation on the validation folder..
-        # if self.hparams.train_all == False:
-        #     return self._dataloader(self.val_dataset, train=False)
-        # else:
-        #     return []
+        if self.hparams.train_all == False:
+            return self._dataloader(self.val_dataset, train=False)
+        else:
+            return []
 
     def _dataloader(self, dataset, train=False):
         return torch.utils.data.DataLoader(
@@ -145,6 +164,10 @@ class ContrailsModule(pl.LightningModule):
                 decoder_use_batchnorm = True,
                 classes = 1, 
                 activation =  None,
+            )
+        elif self.hparams.model_type == "mine":
+            model = CustomUnet(
+                num_classes=1,
             )
 
         # Validation: Load saved weights
@@ -229,8 +252,9 @@ class ContrailsModule(pl.LightningModule):
                     y_logits.squeeze(dim=1),
                     y.squeeze(),
                 ])
-                torch.save(save_preds, "{}/fold_{}_pred_{}.pt".format(
+                torch.save(save_preds, "{}{}/fold_{}_pred_{}.pt".format(
                     self.hparams.preds_dir, 
+                    self.hparams.run_name,
                     self.hparams.val_fold, 
                     batch_idx,
                     ))

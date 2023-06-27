@@ -17,16 +17,21 @@ def validate(
     if config.fast_dev_run == True:
         config.num_workers = 1
 
-    #TODO: NEED TO FIX DIRECTORY NAME HERE..
-    # # Create directory for saving predictions
-    # if not os.path.exists(config.preds_dir):
-    #     os.mkdir(config.preds_dir)
+    # Get run metadata
+    experiment_name =  None
+
+    # Create directory for saving predictions
+    if config.save_preds:
+        if not os.path.exists(config.preds_dir + str(experiment_name)):
+            os.mkdir(config.preds_dir + str(experiment_name))
 
     data_module = ContrailsDataModule(
         data_dir = config.data_dir,
         batch_size = config.batch_size,
         num_workers = config.num_workers,
         val_fold = config.val_fold,
+        train_all = config.train_all,
+        comp_val = config.comp_val,
         )
 
     module = ContrailsModule(

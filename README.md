@@ -6,12 +6,11 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 ### TODO
 
-- Save preds directory does not work yet (writes to main preds dir)
-- When save_preds=True, preds are written on every validation step...
+- When save_preds=True, preds are written on every validation step.. (can I write preds at the end of training?)
 
 ### Ideas
 
-- reduce val 
+- reduce validation steps when doing sweeps to reduce run-time
 
 - Write a validate script that takes a file path of predictions and scores against ground truth
 - DepthwiseConv2D layer using the two neigbhouring frames
@@ -62,11 +61,24 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 Segmentation Models Documentation: https://segmentation-modelspytorch.readthedocs.io/en/latest/
 
 
+### Sample Workflow
+
+1. Train Model
+
+`CUDA_VISIBLE_DEVICES=2 python main.py --train_all --model_type="timm" --model_name="efficientnetv2_rw_m.agc_in1k" --save_weights`
+
+2. Evaluate on Validation
+
+`CUDA_VISIBLE_DEVICES=2 python main.py --comp_val --model_type="timm" --model_name="efficientnetv2_rw_m.agc_in1k" --model_weights="/data/bartley/gpu_test/models/segmentation/golden-water-149.pt" --save_preds`
+
+3. Find best threshold
+
+`CUDA_VISIBLE_DEVICES="" python dice_threshold.py`
+
 ### Commands
 
-CUDA_VISIBLE_DEVICES=0 python main.py --save_preds --fast_dev_run
-CUDA_VISIBLE_DEVICES=1 python main.py --save_preds
+CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
-CUDA_VISIBLE_DEVICES=0 python main.py --model_type="timm" --model_name="efficientnetv2_rw_s.ra2_in1k" --all_folds=True
+CUDA_VISIBLE_DEVICES=2 python main_copy.py --save_preds --no_wandb --model_type="seg" --model_name="mit_b0"
 
-CUDA_VISIBLE_DEVICES=0 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/test_weights.pt" --save_preds --fast_dev_run
+CUDA_VISIBLE_DEVICES="" python contrails_pl/models/my_models.py
