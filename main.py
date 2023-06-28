@@ -24,6 +24,7 @@ config = SimpleNamespace(
     lr_min = 1e-8,
     num_cycles = 5,
     scheduler = "CosineAnnealingLR",
+    interpolate = "nearest",
     # -- Trainer Config --
     accelerator = "gpu",
     fast_dev_run = False,
@@ -42,6 +43,7 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # ----- End RGB tests -----
     parser.add_argument("--scheduler", type=str, default=config.scheduler, help="Learning rate scheduler for the model to use.")
+    parser.add_argument("--interpolate", type=str, default=config.interpolate, help="Interpolation method for the decoder.")
     parser.add_argument("--model_name", type=str, default=config.model_name, help="Encoder model to use for training.")
     parser.add_argument("--model_type", type=str, default=config.model_type, help="Model type (seg/timm).")
     parser.add_argument("--model_weights", type=str, default=config.model_weights, help="Model weights file location (used for validation run).")

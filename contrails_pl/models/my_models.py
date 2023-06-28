@@ -82,7 +82,6 @@ class CustomUnet(nn.Module):
         # *** DO NOT APPLY MAX POOL TO down_9 ***
         print()
         print("decoder")
-
         up_1 = self.up_transpose_1(down_9)
         print(up_1.shape)
         x = self.up_convolution_1(torch.cat([down_7, up_1], 1))

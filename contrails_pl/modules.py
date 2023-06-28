@@ -29,6 +29,7 @@ class ContrailsDataset(torch.utils.data.Dataset):
         if comp_val == True:
             if self.trn == False:
                 df = pd.read_csv(self.data_dir + "valid_df.csv")
+                print("Comp val length: ", len(df))
                 return df["record_id"].values
         
         df = pd.read_csv(self.data_dir + "train_df.csv")
@@ -139,6 +140,7 @@ class ContrailsModule(pl.LightningModule):
         lr_min: float,
         num_cycles: int,
         val_fold: int,
+        interpolate: str,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -155,6 +157,7 @@ class ContrailsModule(pl.LightningModule):
                 backbone=self.hparams.model_name, 
                 in_chans=3,
                 num_classes=1,
+                interpolate=self.hparams.interpolate,
             )
         elif self.hparams.model_type == "seg":
             # Segmentation Models

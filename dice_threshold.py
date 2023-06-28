@@ -44,7 +44,7 @@ print("Dice: {:.6f}".format(base_dice))
 best_dice = 0
 best_threshold = 0
 
-for i in tqdm(range(10, 91, 2)):
+for i in tqdm(range(-500, 0, 50)):
 
     # Get dice score
     current_threshold = i/100
@@ -55,5 +55,17 @@ for i in tqdm(range(10, 91, 2)):
         best_dice = current_dice
         best_threshold = current_threshold
     print("Thresh: {:.2f} Dice: {:.6f}".format(current_threshold, current_dice))
+
+# for i in tqdm(range(10, 91, 2)):
+
+#     # Get dice score
+#     current_threshold = i/100
+#     current_dice = get_dice_score(threshold=current_threshold)
+
+#     # Update if score is better
+#     if current_dice > best_dice:
+#         best_dice = current_dice
+#         best_threshold = current_threshold
+#     print("Thresh: {:.2f} Dice: {:.6f}".format(current_threshold, current_dice))
 
 print("Best-Thresh: {:.2f} Best-Dice: {:.6f}".format(best_threshold, best_dice))

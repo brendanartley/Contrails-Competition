@@ -49,6 +49,7 @@ class TimmUnet(nn.Module):
             num_classes=1,
             center=False,
             norm_layer=nn.BatchNorm2d,
+            interpolate="nearest",
     ):
         super().__init__()
         backbone_kwargs = backbone_kwargs or {}
@@ -68,6 +69,7 @@ class TimmUnet(nn.Module):
             final_channels=num_classes,
             norm_layer=norm_layer,
             center=center,
+            interpolate=interpolate,
         )
 
     def forward(self, x: torch.Tensor):
@@ -93,10 +95,11 @@ class Conv2dBnAct(nn.Module):
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, scale_factor=2.0, act_layer=nn.ReLU, norm_layer=nn.BatchNorm2d):
+    def __init__(self, in_channels, out_channels, scale_factor=2.0, act_layer=nn.ReLU, norm_layer=nn.BatchNorm2d, interpolate="nearest"):
         super().__init__()
         conv_args = dict(kernel_size=3, padding=1, act_layer=act_layer)
         self.scale_factor = scale_factor
+        self.interpolate = interpolate
         if norm_layer is None:
             self.conv1 = Conv2dBnAct(in_channels, out_channels, **conv_args)
             self.conv2 = Conv2dBnAct(out_channels, out_channels,  **conv_args)
@@ -106,7 +109,7 @@ class DecoderBlock(nn.Module):
 
     def forward(self, x, skip: Optional[torch.Tensor] = None):
         if self.scale_factor != 1.0:
-            x = F.interpolate(x, scale_factor=self.scale_factor, mode='nearest')
+            x = F.interpolate(x, scale_factor=self.scale_factor, mode=self.interpolate)
         if skip is not None:
             x = torch.cat([x, skip], dim=1)
         x = self.conv1(x)
@@ -126,12 +129,13 @@ class UnetDecoder(nn.Module):
             final_channels=1,
             norm_layer=nn.BatchNorm2d,
             center=False,
+            interpolate="nearest",
     ):
         super().__init__()
 
         if center:
             channels = encoder_channels[0]
-            self.center = DecoderBlock(channels, channels, scale_factor=1.0, norm_layer=norm_layer)
+            self.center = DecoderBlock(channels, channels, scale_factor=1.0, norm_layer=norm_layer, interpolate=interpolate)
         else:
             self.center = nn.Identity()
 
@@ -142,7 +146,7 @@ class UnetDecoder(nn.Module):
 
         self.blocks = nn.ModuleList()
         for in_chs, out_chs in zip(in_channels, out_channels):
-            self.blocks.append(DecoderBlock(in_chs, out_chs, norm_layer=norm_layer))
+            self.blocks.append(DecoderBlock(in_chs, out_chs, norm_layer=norm_layer, interpolate=interpolate))
 
         # self.final_conv = nn.Conv2d(out_channels[-1], final_channels, kernel_size=(1, 1))
         self.final_conv = SegmentationHead(out_channels[-1], final_channels)

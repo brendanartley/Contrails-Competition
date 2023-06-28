@@ -75,6 +75,7 @@ def train(
                 fast_dev_run = config.fast_dev_run,
                 num_cycles = config.num_cycles,
                 val_fold = val_fold,
+                interpolate = config.interpolate,
             )
 
             # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark
@@ -154,6 +155,7 @@ def train(
             fast_dev_run = config.fast_dev_run,
             num_cycles = config.num_cycles,
             val_fold = config.val_fold,
+            interpolate = config.interpolate,
         )
 
         # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark
