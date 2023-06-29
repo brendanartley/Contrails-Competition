@@ -17,10 +17,18 @@ from .models.timm_unet import TimmUnet
 from .models.my_models import CustomUnet
 
 class ContrailsDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, val_fold, train_all, comp_val, train=True, transform=None):
+    def __init__(self, data_dir, val_fold, train_all, comp_val, img_size, train=True):
         self.data_dir = data_dir
         self.trn = train
         self.val_fold = val_fold
+
+        # Resize transform if img_size is not 256x256
+        if img_size != 256:
+            self.transform = torchvision.transforms.Resize((img_size, img_size), antialias=True)
+        else:
+            self.transform = None
+
+        # Load data
         self.records = self.load_records(train_all, comp_val)
 
     def load_records(self, train_all, comp_val):
@@ -61,8 +69,13 @@ class ContrailsDataset(torch.utils.data.Dataset):
         img = torch.tensor(img)
         label = torch.tensor(label)
 
+        # Reorder dimensions
         # (256, 256, 3) -> (3, 256, 256)
         img = img.permute(2, 0, 1)
+
+        # Resize (if specified)
+        if self.transform:
+            img = self.transform(img)
             
         return img.float(), label.int()
     
@@ -78,6 +91,7 @@ class ContrailsDataModule(pl.LightningDataModule):
         val_fold: int,
         train_all: bool,
         comp_val: bool,
+        img_size: int,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -102,6 +116,7 @@ class ContrailsDataModule(pl.LightningDataModule):
             train=train,
             train_all=self.hparams.train_all,
             comp_val=self.hparams.comp_val,
+            img_size=self.hparams.img_size,
             )
     
     def train_dataloader(self):

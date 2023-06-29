@@ -53,6 +53,11 @@ class TimmUnet(nn.Module):
     ):
         super().__init__()
         backbone_kwargs = backbone_kwargs or {}
+
+        # # ----- FEATURE ALIGNMENT FOR SPECIFIC MODELS -----
+        # if backbone == "swinv2_small_window8_256.ms_in1k":
+        #     decoder_channels = (16, 32, 64, 128)
+
         # NOTE some models need different backbone indices specified based on the alignment of features
         # and some models won't have a full enough range of feature strides to work properly.
         encoder = create_model(
@@ -70,6 +75,7 @@ class TimmUnet(nn.Module):
             norm_layer=norm_layer,
             center=center,
             interpolate=interpolate,
+            backbone=backbone,
         )
 
     def forward(self, x: torch.Tensor):
@@ -130,8 +136,11 @@ class UnetDecoder(nn.Module):
             norm_layer=nn.BatchNorm2d,
             center=False,
             interpolate="nearest",
+            backbone=None,
     ):
         super().__init__()
+        self.backbone = backbone
+        self.interpolate = interpolate
 
         if center:
             channels = encoder_channels[0]
@@ -165,8 +174,14 @@ class UnetDecoder(nn.Module):
         encoder_head = x[0]
         skips = x[1:]
         x = self.center(encoder_head)
+
+        # Iterate decoder blocks
         for i, b in enumerate(self.blocks):
             skip = skips[i] if i < len(skips) else None
             x = b(x, skip)
         x = self.final_conv(x)
+
+        # Reshape to mask shape (256)
+        if x.shape[-1] != 256:
+            x = F.interpolate(x, size=(256, 256), mode="bilinear")
         return x

@@ -44,7 +44,7 @@ print("Dice: {:.6f}".format(base_dice))
 best_dice = 0
 best_threshold = 0
 
-for i in tqdm(range(-500, 0, 50)):
+for i in tqdm(range(-500, 100, 25)):
 
     # Get dice score
     current_threshold = i/100

@@ -4,32 +4,24 @@ Code for ICRGW.
 
 Test w/ only contrails data (1/2 the size), and train final model on all the data.
 
-### TODO
-
-- When save_preds=True, preds are written on every validation step.. (can I write preds at the end of training?)
-
 ### Ideas
 
+- Look at AMP w/ Lightning 
+    - https://lightning.ai/docs/pytorch/1.5.7/advanced/mixed_precision.html
+    - https://github.com/TimDettmers/bitsandbytes
 
-Look at using `in_22k` versions as they are pre-trained on more data (test this)
+- Train a bigger MaxVIT model on A100s
 
-models = [
-    'caformer_b36.sail_in1',
-    'convformer_b36.sail_in1k',
-    'convnextv2_tiny.fcmae_ft_in1k (2023 model)',
-    'efficientformerv2_l.snap_dist_in1k',
-    'maxvit_small_tf_224.in1k (lots of models here)',
-    'poolformer_m36.sail_in1k',
-    'poolformerv2_m36.sail_in1k',
-    'swin_small_patch4_window7_224.ms_in1k',
-    'swinv2_small_window8_256.ms_in1k'
-]
+- Add data augmentations.
+    - crop / shear might not work best (as there is some geographic info)
+    - color augmentation may be best (need to run some tests)
 
-big_models = [
-    'tf_efficientnetv2_xl.in21k',
-    'maxvit_base_tf_224.in21k'
-]
+- Best model is 
 
+- Mixed precision training. (reduce GPU footprint)
+
+- Try and use SOTA models that are top of the imagenetLB
+    - https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet-real.csv
 
 - Fix KFold w/ Sweeps Error
 - Read into the multi-frame model approach in the paper (Resnet3D?)
@@ -49,8 +41,18 @@ big_models = [
 
 ### Models
 
+EffnetV2_t
+| Resolution | Batch Size | Precision    | GPU     |
+|------------|------------|--------------|---------|
+| 256        | 32         | 32           | 8.2GB   |
+| 384        | 32         | 32           | 17.7GB  |
+| 384        | 16         | 32           | 9.8GB   |
+| 384        | 32         | 16-mixed     | 9.8GB   |
+| 384        | 16         | 16-mixed     | 5.7GB   |
+
+
 Timm pre-trained models
-`['efficientnetv2_rw_t.ra2_in1k','efficientnetv2_rw_s.ra2_in1k','efficientnetv2_rw_m.agc_in1k']`
+`['efficientnetv2_rw_t.ra2_in1k','efficientnetv2_rw_s.ra2_in1k','efficientnetv2_rw_m.agc_in1k', 'maxxvit_rmlp_small_rw_256.sw_in1k']`
 
 Segmentation Models
 `["timm-regnetx_016", "timm-regnetx_032", "mit_b0", "mit_b1", "mit_b2", "mit_b3", "mit_b4", "mit_b5"]`
@@ -103,24 +105,16 @@ Segmentation Models Documentation: https://segmentation-modelspytorch.readthedoc
 
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
-CUDA_VISIBLE_DEVICES=2 python main_copy.py --save_preds --no_wandb --model_type="seg" --model_name="mit_b0"
 
-CUDA_VISIBLE_DEVICES="" python contrails_pl/models/my_models.py
+CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="maxvit_rmlp_base_rw_384.sw_in12k_ft_in1k" --epochs=12 --img_size=384 --precision="16-mixed" --lr=5e-5 --batch_size=8
 
-CUDA_VISIBLE_DEVICES=3 python main.py --save_weights --save_preds --all_folds --model_type="timm" --model_name="efficientnetv2_rw_m.agc_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/"
+CUDA_VISIBLE_DEVICES=3 python main.py --model_type="timm" --model_name="maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --epochs=12 --img_size=384 --precision="16-mixed" --lr=1e-4 --batch_size=16
 
-CUDA_VISIBLE_DEVICES=2 python main.py --all_folds
 
-"bilinear", "nearest", "bicubic", "area", "nearest-exact"
-
-CUDA_VISIBLE_DEVICES=3 python main.py --all_folds --interpolate="bilinear" && CUDA_VISIBLE_DEVICES=3 python main.py --all_folds --interpolate="nearest" && CUDA_VISIBLE_DEVICES=3 python main.py --all_folds --interpolate="bicubic" && CUDA_VISIBLE_DEVICES=3 python main.py --all_folds --interpolate="area" && CUDA_VISIBLE_DEVICES=3 python main.py --all_folds --interpolate="nearest-exact" && CUDA_VISIBLE_DEVICES=3 python main.py --all_folds --interpolate="nearest"
-
-CUDA_VISIBLE_DEVICES=3 python main.py --fast_dev_run --interpolate="linear"
-CUDA_VISIBLE_DEVICES=3 python main.py --fast_dev_run --interpolate="bilinear"
-CUDA_VISIBLE_DEVICES=3 python main.py --fast_dev_run --interpolate="area"
-
-CUDA_VISIBLE_DEVICES=3 python main.py --fast_dev_run --interpolate="nearest-exact"
-
+CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="maxxvit_rmlp_small_rw_256.sw_in1k" --epochs=11 --no_wandb --save_preds
+CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="convnext_base.clip_laion2b_augreg_ft_in12k_in1k" --epochs=10 --fast_dev_run
+CUDA_VISIBLE_DEVICES=3 python main.py --model_type="timm" --model_name="maxxvit_rmlp_small_rw_256.sw_in1k" --epochs=20
+CUDA_VISIBLE_DEVICES=3 python main.py --model_type="timm" --model_name="maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=12 --all_folds
 
 #### Check dice threshold
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py

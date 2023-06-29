@@ -15,6 +15,7 @@ config = SimpleNamespace(
     model_name = "efficientnetv2_rw_t.ra2_in1k",
     model_weights = None, # Used for validation run
     model_type = "timm",
+    img_size = 256,
     batch_size = 32,
     epochs = 5,
     val_fold = 0,
@@ -30,7 +31,7 @@ config = SimpleNamespace(
     fast_dev_run = False,
     overfit_batches = 0,
     devices = 1,
-    precision = 32,
+    precision = "32", # "32", "16", "16-mixed"
     log_every_n_steps = 10,
     accumulate_grad_batches = 1,
     val_check_interval = None,
@@ -57,6 +58,8 @@ def parse_args():
     parser.add_argument("--overfit_batches", type=int, default=config.overfit_batches, help="Num of batches to overfit (sanity check).")
     parser.add_argument('--no_wandb', action='store_true', help='Wether to log with weights and biases.')
     parser.add_argument("--seed", type=int, default=config.seed, help="Seed for reproducability.")
+    parser.add_argument("--precision", type=str, default=config.precision, help="Precision to use (AMP).")
+    parser.add_argument("--img_size", type=int, default=config.img_size, help="Interpolates to an image size (orig = 256x256).")
     parser.add_argument("--batch_size", type=int, default=config.batch_size, help="Num data points per batch.")
     parser.add_argument("--accumulate_grad_batches", type=int, default=config.accumulate_grad_batches, help="Number of steps before each optimizer step.")
     parser.add_argument("--log_every_n_steps", type=int, default=config.log_every_n_steps, help="Logs every N steps.")

@@ -32,6 +32,7 @@ def validate(
         val_fold = config.val_fold,
         train_all = config.train_all,
         comp_val = config.comp_val,
+        img_size = config.img_size,
         )
 
     module = ContrailsModule(
