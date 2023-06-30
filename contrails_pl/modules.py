@@ -1,13 +1,15 @@
 import lightning.pytorch as pl
-import torchvision
-from torchvision import transforms
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchmetrics
 import torchinfo
+import torchvision
+from torchvision import transforms
+# import bitsandbytes as bnb
 
 import timm
+from timm.scheduler.cosine_lr import CosineLRScheduler
 
 import pandas as pd
 import numpy as np
@@ -17,16 +19,11 @@ from .models.timm_unet import TimmUnet
 from .models.my_models import CustomUnet
 
 class ContrailsDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, val_fold, train_all, comp_val, img_size, train=True):
+    def __init__(self, data_dir, val_fold, train_all, comp_val, img_size, train=True, transform=None):
         self.data_dir = data_dir
         self.trn = train
         self.val_fold = val_fold
-
-        # Resize transform if img_size is not 256x256
-        if img_size != 256:
-            self.transform = torchvision.transforms.Resize((img_size, img_size), antialias=True)
-        else:
-            self.transform = None
+        self.transform = transform
 
         # Load data
         self.records = self.load_records(train_all, comp_val)
@@ -60,22 +57,18 @@ class ContrailsDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         fpath = str(self.records[index])
         con_path = self.data_dir + "contrails/" + fpath + ".npy"
-        con = np.load(str(con_path))
-
-        # 4th dimension is the binary mask (label)
-        img = con[..., :-1]
-        label = con[..., -1]
         
-        img = torch.tensor(img)
-        label = torch.tensor(label)
+        # load data
+        con = np.load(str(con_path))
+        con = torch.tensor(con).permute(2, 0, 1)
 
-        # Reorder dimensions
-        # (256, 256, 3) -> (3, 256, 256)
-        img = img.permute(2, 0, 1)
-
-        # Resize (if specified)
+        # transform before selection (transform must be the same on img + seg map)
         if self.transform:
-            img = self.transform(img)
+            con = self.transform(con)
+        
+        # last dimension is the binary mask (label)
+        img = con[:-1, ...]
+        label = con[-1, ...]
             
         return img.float(), label.int()
     
@@ -92,14 +85,22 @@ class ContrailsDataModule(pl.LightningDataModule):
         train_all: bool,
         comp_val: bool,
         img_size: int,
+        rand_scale_min: float,
     ):
         super().__init__()
         self.save_hyperparameters()
         self.train_transform, self.val_transform = self._init_transforms()
     
     def _init_transforms(self):
-        img_transforms = None
-        return img_transforms, img_transforms
+        train_transforms = transforms.Compose([
+            transforms.RandomResizedCrop(256, scale=(self.hparams.rand_scale_min, 1.0), antialias=True),
+            transforms.Resize((self.hparams.img_size, self.hparams.img_size), antialias=True)
+        ])
+
+        valid_transforms = transforms.Compose([
+            transforms.Resize((self.hparams.img_size, self.hparams.img_size), antialias=True),
+        ])
+        return train_transforms, valid_transforms
     
     def setup(self, stage):        
         if stage == "fit" or stage is None:
@@ -117,6 +118,7 @@ class ContrailsDataModule(pl.LightningDataModule):
             train_all=self.hparams.train_all,
             comp_val=self.hparams.comp_val,
             img_size=self.hparams.img_size,
+            transform=transform
             )
     
     def train_dataloader(self):
@@ -198,6 +200,8 @@ class ContrailsModule(pl.LightningModule):
             self.parameters(), 
             lr=self.hparams.lr,
             )
+        # Bits + Bytes ()
+        # return bnb.optim.Adam8bit(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.999))
 
     def _init_scheduler(self, optimizer):
         if self.hparams.scheduler == "CosineAnnealingLR":
@@ -207,7 +211,7 @@ class ContrailsModule(pl.LightningModule):
                 eta_min = self.hparams.lr_min,
                 )
         elif self.hparams.scheduler == "CosineAnnealingLRWarmup":
-            return timm.scheduler.cosine_lr.CosineLRScheduler(
+            return CosineLRScheduler(
                 optimizer, 
                 t_initial = self.trainer.estimated_stepping_batches,
                 warmup_t = self.trainer.estimated_stepping_batches//25,
@@ -229,9 +233,12 @@ class ContrailsModule(pl.LightningModule):
     
     def _init_metrics(self):
         metrics = {
-            "dice": torchmetrics.Dice(
-                average = 'micro',
-            )
+            "dice": torchmetrics.Dice(average = 'micro', threshold=0.5),
+            "dice_-2_0": torchmetrics.Dice(average = 'micro', threshold=-2.0),
+            "dice_-1_5": torchmetrics.Dice(average = 'micro', threshold=-1.5),
+            "dice_-1_0": torchmetrics.Dice(average = 'micro', threshold=-1),
+            "dice_-0_5": torchmetrics.Dice(average = 'micro', threshold=-0.5),
+            "dice_0_0": torchmetrics.Dice(average = 'micro', threshold=0),
             }
         metric_collection = torchmetrics.MetricCollection(metrics)
         return torch.nn.ModuleDict(

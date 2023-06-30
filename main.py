@@ -16,13 +16,14 @@ config = SimpleNamespace(
     model_weights = None, # Used for validation run
     model_type = "timm",
     img_size = 256,
+    rand_scale_min = 0.8,
     batch_size = 32,
     epochs = 5,
     val_fold = 0,
     num_folds = 5,
     all_folds = False,
     lr = 2e-4,
-    lr_min = 1e-8,
+    lr_min = 1e-5,
     num_cycles = 5,
     scheduler = "CosineAnnealingLR",
     interpolate = "nearest",
@@ -60,6 +61,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=config.seed, help="Seed for reproducability.")
     parser.add_argument("--precision", type=str, default=config.precision, help="Precision to use (AMP).")
     parser.add_argument("--img_size", type=int, default=config.img_size, help="Interpolates to an image size (orig = 256x256).")
+    parser.add_argument("--rand_scale_min", type=float, default=config.rand_scale_min, help="Lower bound of random crop augmentation.")
     parser.add_argument("--batch_size", type=int, default=config.batch_size, help="Num data points per batch.")
     parser.add_argument("--accumulate_grad_batches", type=int, default=config.accumulate_grad_batches, help="Number of steps before each optimizer step.")
     parser.add_argument("--log_every_n_steps", type=int, default=config.log_every_n_steps, help="Logs every N steps.")

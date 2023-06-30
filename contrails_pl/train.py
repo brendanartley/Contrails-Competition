@@ -35,6 +35,11 @@ def train(
                     "val_loss": "min", 
                     "train_loss": "min",
                     "val_dice": "last",
+                    "val_dice_-2_0": "last",
+                    "val_dice_-1_5": "last",
+                    "val_dice_-1_0": "last",
+                    "val_dice_-0_5": "last",
+                    "val_dice_0_0": "last",
                     },
                 overfit_batches = config.overfit_batches,
                 no_wandb = config.no_wandb,
@@ -58,6 +63,7 @@ def train(
                 train_all = config.train_all,
                 comp_val = config.comp_val,
                 img_size = config.img_size,
+                rand_scale_min = config.rand_scale_min,
                 )
 
             module = ContrailsModule(
@@ -116,6 +122,11 @@ def train(
                 "val_loss": "min", 
                 "train_loss": "min",
                 "val_dice": "last",
+                "val_dice_-2_0": "last",
+                "val_dice_-1_5": "last",
+                "val_dice_-1_0": "last",
+                "val_dice_-0_5": "last",
+                "val_dice_0_0": "last",
                 },
             overfit_batches = config.overfit_batches,
             no_wandb = config.no_wandb,
@@ -139,6 +150,7 @@ def train(
             train_all = config.train_all,
             comp_val = config.comp_val,
             img_size = config.img_size,
+            rand_scale_min = config.rand_scale_min,
             )
 
         module = ContrailsModule(

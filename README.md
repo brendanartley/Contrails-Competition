@@ -10,15 +10,14 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
     - https://lightning.ai/docs/pytorch/1.5.7/advanced/mixed_precision.html
     - https://github.com/TimDettmers/bitsandbytes
 
-- Train a bigger MaxVIT model on A100s
+- Train a 512 img model. +2% from 256 -> 384
+'maxvit_tiny_tf_512.in1k'?
 
 - Add data augmentations.
     - crop / shear might not work best (as there is some geographic info)
     - color augmentation may be best (need to run some tests)
 
-- Best model is 
-
-- Mixed precision training. (reduce GPU footprint)
+- Automatic contrail tracking paper. https://amt.copernicus.org/articles/3/1089/2010/amt-3-1089-2010.pdf
 
 - Try and use SOTA models that are top of the imagenetLB
     - https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet-real.csv
@@ -49,6 +48,7 @@ EffnetV2_t
 | 384        | 16         | 32           | 9.8GB   |
 | 384        | 32         | 16-mixed     | 9.8GB   |
 | 384        | 16         | 16-mixed     | 5.7GB   |
+| 384        | 16         | 16-mixed     | 5.5GB   | <- w/ bits and bytes
 
 
 Timm pre-trained models
@@ -80,8 +80,6 @@ Segmentation Models
 | mit_b4               | -        | 60M    |
 | mit_b5               | -        | 81M    |
 
-
-
 ### Links
 
 Segmentation Models Documentation: https://segmentation-modelspytorch.readthedocs.io/en/latest/
@@ -105,19 +103,14 @@ Segmentation Models Documentation: https://segmentation-modelspytorch.readthedoc
 
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
-
 CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="maxvit_rmlp_base_rw_384.sw_in12k_ft_in1k" --epochs=12 --img_size=384 --precision="16-mixed" --lr=5e-5 --batch_size=8
 
-CUDA_VISIBLE_DEVICES=3 python main.py --model_type="timm" --model_name="maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --epochs=12 --img_size=384 --precision="16-mixed" --lr=1e-4 --batch_size=16
+CUDA_VISIBLE_DEVICES=3 python main.py --model_type="timm" --model_name="maxvit_rmlp_tiny_rw_256.sw_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --epochs=11 --lr_min=1e-5 --save_weights --train_all --seed=0 && CUDA_VISIBLE_DEVICES=3 python main.py --model_type="timm" --model_name="maxvit_rmlp_tiny_rw_256.sw_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --epochs=11 --lr_min=1e-5 --save_weights --train_all --seed=1
 
+CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="maxvit_rmlp_tiny_rw_256.sw_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --epochs=11 --lr_min=1e-5 --save_weights --train_all --seed=2 && CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="maxvit_rmlp_tiny_rw_256.sw_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --epochs=11 --lr_min=1e-5 --save_weights --train_all --seed=3
 
-CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="maxxvit_rmlp_small_rw_256.sw_in1k" --epochs=11 --no_wandb --save_preds
-CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="convnext_base.clip_laion2b_augreg_ft_in12k_in1k" --epochs=10 --fast_dev_run
-CUDA_VISIBLE_DEVICES=3 python main.py --model_type="timm" --model_name="maxxvit_rmlp_small_rw_256.sw_in1k" --epochs=20
-CUDA_VISIBLE_DEVICES=3 python main.py --model_type="timm" --model_name="maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=12 --all_folds
-
-#### Check dice threshold
-CUDA_VISIBLE_DEVICES="" python dice_threshold.py
+CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/8crivy2q
+CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/8crivy2q
 
 #### KFold on All Training
 CUDA_VISIBLE_DEVICES=3 python main.py --save_weights --save_preds --all_folds --model_type="timm" --model_name="efficientnetv2_rw_t.ra2_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/"
@@ -127,3 +120,8 @@ CUDA_VISIBLE_DEVICES=2 python main.py --save_weights --train_all --model_type="t
 
 #### Competition Validation
 CUDA_VISIBLE_DEVICES=2 python main.py --comp_val --save_preds --model_type="timm" --model_name="efficientnetv2_rw_m.agc_in1k" --model_weights="/data/bartley/gpu_test/models/segmentation/deft-sun-159.pt" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/"
+
+#### Check dice threshold (edit model preds dir in code)
+CUDA_VISIBLE_DEVICES="" python dice_threshold.py
+
+#### Submit.
