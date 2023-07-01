@@ -15,8 +15,9 @@ import pandas as pd
 import numpy as np
 import segmentation_models_pytorch as smp
 
-from .models.timm_unet import TimmUnet
-from .models.my_models import CustomUnet
+# Models
+from .models.my_models import Unet, UnetPlusPlus, MAnet
+from .models.timm_unet import CustomUnet
 
 class ContrailsDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, val_fold, train_all, comp_val, img_size, train=True, transform=None):
@@ -24,6 +25,13 @@ class ContrailsDataset(torch.utils.data.Dataset):
         self.trn = train
         self.val_fold = val_fold
         self.transform = transform
+
+        # NOTE: REVERTED TO PREVIOUS VERSION LOADER. FOR SOME REASON LARGER IMAGE SIZES ARE NOT CONVERGING AS QUICK WITH OTHER APPROACH..
+        # Resize transform if img_size is not 256x256	
+        if img_size != 256:	
+            self.transform = torchvision.transforms.Resize((img_size, img_size), antialias=True)	
+        else:	
+            self.transform = None
 
         # Load data
         self.records = self.load_records(train_all, comp_val)
@@ -57,18 +65,22 @@ class ContrailsDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         fpath = str(self.records[index])
         con_path = self.data_dir + "contrails/" + fpath + ".npy"
-        
-        # load data
-        con = np.load(str(con_path))
-        con = torch.tensor(con).permute(2, 0, 1)
+        con = np.load(str(con_path))	
 
-        # transform before selection (transform must be the same on img + seg map)
-        if self.transform:
-            con = self.transform(con)
+	    # 4th dimension is the binary mask (label)	
+        img = con[..., :-1]	
+        label = con[..., -1]	
+        	
+        img = torch.tensor(img)	
+        label = torch.tensor(label)	
+
+        # Reorder dimensions	
+        # (256, 256, 3) -> (3, 256, 256)	
+        img = img.permute(2, 0, 1)	
         
-        # last dimension is the binary mask (label)
-        img = con[:-1, ...]
-        label = con[-1, ...]
+        # Resize (if specified)	
+        if self.transform:	
+            img = self.transform(img)	
             
         return img.float(), label.int()
     
@@ -86,21 +98,26 @@ class ContrailsDataModule(pl.LightningDataModule):
         comp_val: bool,
         img_size: int,
         rand_scale_min: float,
+        no_transform: bool,
     ):
         super().__init__()
         self.save_hyperparameters()
         self.train_transform, self.val_transform = self._init_transforms()
     
     def _init_transforms(self):
-        train_transforms = transforms.Compose([
-            transforms.RandomResizedCrop(256, scale=(self.hparams.rand_scale_min, 1.0), antialias=True),
-            transforms.Resize((self.hparams.img_size, self.hparams.img_size), antialias=True)
-        ])
+        # # Optional: random-resize crop transform
+        # if self.hparams.no_transform == True:
+        #     train_transforms = None
+        # else:
+        #     train_transforms = transforms.Compose([
+        #         transforms.RandomResizedCrop(self.hparams.img_size, scale=(self.hparams.rand_scale_min, 1.0), antialias=True),
+        #     ])
 
-        valid_transforms = transforms.Compose([
-            transforms.Resize((self.hparams.img_size, self.hparams.img_size), antialias=True),
-        ])
-        return train_transforms, valid_transforms
+        # valid_transforms = transforms.Compose([
+        #     transforms.Resize(self.hparams.img_size, antialias=True),
+        # ])
+        # return train_transforms, valid_transforms
+        return None, None
     
     def setup(self, stage):        
         if stage == "fit" or stage is None:
@@ -117,7 +134,7 @@ class ContrailsDataModule(pl.LightningDataModule):
             train=train,
             train_all=self.hparams.train_all,
             comp_val=self.hparams.comp_val,
-            img_size=self.hparams.img_size,
+            img_size = self.hparams.img_size,
             transform=transform
             )
     
@@ -146,7 +163,7 @@ class ContrailsModule(pl.LightningModule):
         model_save_dir: str,
         model_name: str,
         preds_dir: str,
-        model_type: str,
+        decoder_type: str,
         model_weights: str,
         run_name: str,
         save_weights: bool,
@@ -167,28 +184,23 @@ class ContrailsModule(pl.LightningModule):
 
     def _init_model(self):
 
+        # Decoder Options
+        seg_models = {
+            "Unet": Unet,
+            "UnetPlusPlus": UnetPlusPlus,
+            "MAnet": MAnet,
+            "CustomUnet": CustomUnet,
+        }
+
         # Training Run
-        if self.hparams.model_type == "timm":
-            # Timm Encoders
-            model = TimmUnet(
-                backbone=self.hparams.model_name, 
-                in_chans=3,
-                num_classes=1,
-                interpolate=self.hparams.interpolate,
+        if self.hparams.decoder_type in seg_models.keys():
+            model = seg_models[self.hparams.decoder_type](
+                encoder_name=self.hparams.model_name, 
+                in_channels=3,
+                classes=1,
             )
-        elif self.hparams.model_type == "seg":
-            # Segmentation Models
-            model = smp.Unet(
-                encoder_name = self.hparams.model_name, 
-                encoder_weights = "imagenet", 
-                decoder_use_batchnorm = True,
-                classes = 1, 
-                activation =  None,
-            )
-        elif self.hparams.model_type == "mine":
-            model = CustomUnet(
-                num_classes=1,
-            )
+        else:
+            raise ValueError(f"{self.hparams.decoder_type} not recognized.")
 
         # Validation: Load saved weights
         if self.hparams.model_weights != None:
@@ -234,11 +246,6 @@ class ContrailsModule(pl.LightningModule):
     def _init_metrics(self):
         metrics = {
             "dice": torchmetrics.Dice(average = 'micro', threshold=0.5),
-            "dice_-2_0": torchmetrics.Dice(average = 'micro', threshold=-2.0),
-            "dice_-1_5": torchmetrics.Dice(average = 'micro', threshold=-1.5),
-            "dice_-1_0": torchmetrics.Dice(average = 'micro', threshold=-1),
-            "dice_-0_5": torchmetrics.Dice(average = 'micro', threshold=-0.5),
-            "dice_0_0": torchmetrics.Dice(average = 'micro', threshold=0),
             }
         metric_collection = torchmetrics.MetricCollection(metrics)
         return torch.nn.ModuleDict(

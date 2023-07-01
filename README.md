@@ -6,16 +6,15 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 ### Ideas
 
+- Post processing in paper (D. Converting binary masks to line segments)
+    - They use OpenCVs LineSegmentDetector in the paper..
+
 - Look at AMP w/ Lightning 
     - https://lightning.ai/docs/pytorch/1.5.7/advanced/mixed_precision.html
     - https://github.com/TimDettmers/bitsandbytes
 
 - Train a 512 img model. +2% from 256 -> 384
 'maxvit_tiny_tf_512.in1k'?
-
-- Add data augmentations.
-    - crop / shear might not work best (as there is some geographic info)
-    - color augmentation may be best (need to run some tests)
 
 - Automatic contrail tracking paper. https://amt.copernicus.org/articles/3/1089/2010/amt-3-1089-2010.pdf
 
@@ -80,6 +79,17 @@ Segmentation Models
 | mit_b4               | -        | 60M    |
 | mit_b5               | -        | 81M    |
 
+### Decoder Sizes
+
+| Type       | Params
+---------------------------
+| Unet         | 31.8 M
+| UnetPlusPlus | 33.4 M
+| MAnet        | 39.1 M
+| FPN          | 30.5 M
+
+MAnet uses less GPU memory than Unet++.
+
 ### Links
 
 Segmentation Models Documentation: https://segmentation-modelspytorch.readthedocs.io/en/latest/
@@ -103,14 +113,24 @@ Segmentation Models Documentation: https://segmentation-modelspytorch.readthedoc
 
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
-CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="maxvit_rmlp_base_rw_384.sw_in12k_ft_in1k" --epochs=12 --img_size=384 --precision="16-mixed" --lr=5e-5 --batch_size=8
+CUDA_VISIBLE_DEVICES=2 python main.py --decoder_type="Unet" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=15 --fast_dev_run &&
+CUDA_VISIBLE_DEVICES=2 python main.py --decoder_type="UnetPlusPlus" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=15 --fast_dev_run &&
+CUDA_VISIBLE_DEVICES=2 python main.py --decoder_type="MAnet" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=15 --fast_dev_run &&
+CUDA_VISIBLE_DEVICES=2 python main.py --decoder_type="FPN" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=15 --fast_dev_run
 
-CUDA_VISIBLE_DEVICES=3 python main.py --model_type="timm" --model_name="maxvit_rmlp_tiny_rw_256.sw_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --epochs=11 --lr_min=1e-5 --save_weights --train_all --seed=0 && CUDA_VISIBLE_DEVICES=3 python main.py --model_type="timm" --model_name="maxvit_rmlp_tiny_rw_256.sw_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --epochs=11 --lr_min=1e-5 --save_weights --train_all --seed=1
+CUDA_VISIBLE_DEVICES=0 python main.py --decoder_type="UnetPlusPlus" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=30
+CUDA_VISIBLE_DEVICES=1 python main.py --decoder_type="UnetPlusPlus" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=30
+CUDA_VISIBLE_DEVICES=2 python main.py --decoder_type="Unet" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=15
+CUDA_VISIBLE_DEVICES=3 python main.py --decoder_type="UnetPlusPlus" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=15
 
-CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="maxvit_rmlp_tiny_rw_256.sw_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --epochs=11 --lr_min=1e-5 --save_weights --train_all --seed=2 && CUDA_VISIBLE_DEVICES=2 python main.py --model_type="timm" --model_name="maxvit_rmlp_tiny_rw_256.sw_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --epochs=11 --lr_min=1e-5 --save_weights --train_all --seed=3
+CUDA_VISIBLE_DEVICES=0 python main.py --decoder_type="CustomUnet" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=1e-4 --batch_size=16 --epochs=30
 
-CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/8crivy2q
-CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/8crivy2q
+CUDA_VISIBLE_DEVICES=1 python main.py --decoder_type="Unet" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=1e-4 --batch_size=16 --epochs=30
+
+CUDA_VISIBLE_DEVICES=2 python main.py --decoder_type="CustomUnet" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=1e-4 --batch_size=16 --epochs=15 --no_transform
+
+CUDA_VISIBLE_DEVICES=3 python main.py --decoder_type="CustomUnet" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=1e-4 --batch_size=16 --epochs=15
+
 
 #### KFold on All Training
 CUDA_VISIBLE_DEVICES=3 python main.py --save_weights --save_preds --all_folds --model_type="timm" --model_name="efficientnetv2_rw_t.ra2_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/"

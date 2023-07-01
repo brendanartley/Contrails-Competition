@@ -35,11 +35,6 @@ def train(
                     "val_loss": "min", 
                     "train_loss": "min",
                     "val_dice": "last",
-                    "val_dice_-2_0": "last",
-                    "val_dice_-1_5": "last",
-                    "val_dice_-1_0": "last",
-                    "val_dice_-0_5": "last",
-                    "val_dice_0_0": "last",
                     },
                 overfit_batches = config.overfit_batches,
                 no_wandb = config.no_wandb,
@@ -64,6 +59,7 @@ def train(
                 comp_val = config.comp_val,
                 img_size = config.img_size,
                 rand_scale_min = config.rand_scale_min,
+                no_transform = config.no_transform,
                 )
 
             module = ContrailsModule(
@@ -72,7 +68,7 @@ def train(
                 model_save_dir = config.model_save_dir,
                 model_name = config.model_name,
                 preds_dir = config.preds_dir,
-                model_type = config.model_type,
+                decoder_type = config.decoder_type,
                 model_weights = config.model_weights,
                 run_name = experiment_name,
                 save_weights = config.save_weights,
@@ -97,7 +93,7 @@ def train(
                 precision = config.precision,
                 callbacks = callbacks,
                 logger = logger,
-                log_every_n_steps = config.log_every_n_steps,
+                log_every_n_steps = (32 // config.batch_size) * 10, # Keeps logging steps similar w/ diff batch_sizes
                 accumulate_grad_batches = config.accumulate_grad_batches,
                 val_check_interval = config.val_check_interval,
                 enable_checkpointing = False,
@@ -122,11 +118,6 @@ def train(
                 "val_loss": "min", 
                 "train_loss": "min",
                 "val_dice": "last",
-                "val_dice_-2_0": "last",
-                "val_dice_-1_5": "last",
-                "val_dice_-1_0": "last",
-                "val_dice_-0_5": "last",
-                "val_dice_0_0": "last",
                 },
             overfit_batches = config.overfit_batches,
             no_wandb = config.no_wandb,
@@ -151,6 +142,7 @@ def train(
             comp_val = config.comp_val,
             img_size = config.img_size,
             rand_scale_min = config.rand_scale_min,
+            no_transform = config.no_transform,
             )
 
         module = ContrailsModule(
@@ -159,7 +151,7 @@ def train(
             model_save_dir = config.model_save_dir,
             model_name = config.model_name,
             preds_dir = config.preds_dir,
-            model_type = config.model_type,
+            decoder_type = config.decoder_type,
             model_weights = config.model_weights,
             run_name = experiment_name,
             save_weights = config.save_weights,
@@ -184,7 +176,7 @@ def train(
             precision = config.precision,
             callbacks = callbacks,
             logger = logger,
-            log_every_n_steps = config.log_every_n_steps,
+            log_every_n_steps = (32 // config.batch_size) * 10,
             accumulate_grad_batches = config.accumulate_grad_batches,
             val_check_interval = config.val_check_interval,
             enable_checkpointing = False,

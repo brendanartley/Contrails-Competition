@@ -11,7 +11,7 @@ Modified Unet implementation.
 Source: https://gist.github.com/rwightman/f8b24f4e6f5504aba03e999e02460d31
 """
 
-class TimmUnet(nn.Module):
+class CustomUnet(nn.Module):
     """Unet is a fully convolution neural network for image semantic segmentation
     Args:
         encoder_name: name of classification model (without last dense layers) used as feature
@@ -20,7 +20,7 @@ class TimmUnet(nn.Module):
         decoder_channels: list of numbers of ``Conv2D`` layer filters in decoder blocks
         decoder_use_batchnorm: if ``True``, ``BatchNormalisation`` layer between ``Conv2D`` and ``Activation`` layers
             is used.
-        num_classes: a number of classes for output (output shape - ``(batch, classes, h, w)``).
+        classes: a number of classes for output (output shape - ``(batch, classes, h, w)``).
         center: if ``True`` add ``Conv2dReLU`` block on encoder head
     NOTE: This is based off an old version of Unet in https://github.com/qubvel/segmentation_models.pytorch
 
@@ -29,10 +29,10 @@ class TimmUnet(nn.Module):
     Find all available encoders w/ `timm.list_models(pretrained=True)`
 
     ```
-    model = TimmUnet(
+    model = CustomUnet(
         backbone="tf_efficientnetv2_s.in1k", 
-        in_chans=3,
-        num_classes=1,
+        in_channels=3,
+        classes=1,
     )
     ```
 
@@ -40,13 +40,13 @@ class TimmUnet(nn.Module):
 
     def __init__(
             self,
-            backbone='resnet50',
+            encoder_name='resnet50',
             backbone_kwargs=None,
             backbone_indices=None,
             decoder_use_batchnorm=True,
             decoder_channels=(256, 128, 64, 32, 16),
-            in_chans=3,
-            num_classes=1,
+            in_channels=3,
+            classes=1,
             center=False,
             norm_layer=nn.BatchNorm2d,
             interpolate="nearest",
@@ -58,10 +58,12 @@ class TimmUnet(nn.Module):
         # if backbone == "swinv2_small_window8_256.ms_in1k":
         #     decoder_channels = (16, 32, 64, 128)
 
-        # NOTE some models need different backbone indices specified based on the alignment of features
-        # and some models won't have a full enough range of feature strides to work properly.
+        # Using segmentation_models naming convention
+        if encoder_name.startswith("tu-"):
+            encoder_name = encoder_name[3:]
+            
         encoder = create_model(
-            backbone, features_only=True, out_indices=backbone_indices, in_chans=in_chans,
+            encoder_name, features_only=True, out_indices=backbone_indices, in_chans=in_channels,
             pretrained=True, **backbone_kwargs)
         encoder_channels = encoder.feature_info.channels()[::-1]
         self.encoder = encoder
@@ -71,11 +73,10 @@ class TimmUnet(nn.Module):
         self.decoder = UnetDecoder(
             encoder_channels=encoder_channels,
             decoder_channels=decoder_channels,
-            final_channels=num_classes,
+            final_channels=classes,
             norm_layer=norm_layer,
             center=center,
             interpolate=interpolate,
-            backbone=backbone,
         )
 
     def forward(self, x: torch.Tensor):
@@ -136,10 +137,8 @@ class UnetDecoder(nn.Module):
             norm_layer=nn.BatchNorm2d,
             center=False,
             interpolate="nearest",
-            backbone=None,
     ):
         super().__init__()
-        self.backbone = backbone
         self.interpolate = interpolate
 
         if center:
