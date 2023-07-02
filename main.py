@@ -13,7 +13,7 @@ DATA_DIR = data["DATA_DIR"]
 # default configuration parameters
 config = SimpleNamespace(
     project = "Contrails-ICRGW",
-    # data_dir = DATA_DIR + "bartley/gpu_test/contrails-images-ash-color/",    
+    # data_dir = DATA_DIR + "/data/bartley/gpu_test/contrails-images-ash-color/",    
     data_dir = DATA_DIR + "bartley/gpu_test/my-ash-contrails-data/",
     model_save_dir = DATA_DIR + "bartley/gpu_test/models/segmentation/",
     preds_dir = DATA_DIR + "bartley/gpu_test/preds/",

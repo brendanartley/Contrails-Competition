@@ -5,7 +5,7 @@ import torch.optim as optim
 import torchmetrics
 import torchinfo
 import torchvision
-from torchvision import transforms
+import albumentations as A
 # import bitsandbytes as bnb
 
 import timm
@@ -25,16 +25,14 @@ class ContrailsDataset(torch.utils.data.Dataset):
         self.trn = train
         self.val_fold = val_fold
         self.transform = transform
-
-        # NOTE: REVERTED TO PREVIOUS VERSION LOADER. FOR SOME REASON LARGER IMAGE SIZES ARE NOT CONVERGING AS QUICK WITH OTHER APPROACH..
-        # Resize transform if img_size is not 256x256	
-        if img_size != 256:	
-            self.transform = torchvision.transforms.Resize((img_size, img_size), antialias=True)	
-        else:	
-            self.transform = None
-
-        # Load data
         self.records = self.load_records(train_all, comp_val)
+        # Final mask shape to 256x256
+        if img_size != 256:
+            self.mask_transform = A.Compose([
+                A.Resize(height=256, width=256)
+            ])
+        else:	
+            self.mask_transform = None
 
     def load_records(self, train_all, comp_val):
 
@@ -65,24 +63,25 @@ class ContrailsDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         fpath = str(self.records[index])
         con_path = self.data_dir + "contrails/" + fpath + ".npy"
-        con = np.load(str(con_path))	
+        con = np.load(str(con_path)).astype("float")
 
-	    # 4th dimension is the binary mask (label)	
+    	# 4th dimension is the binary mask (label)	
         img = con[..., :-1]	
-        label = con[..., -1]	
-        	
-        img = torch.tensor(img)	
-        label = torch.tensor(label)	
+        mask = con[..., -1]	
 
-        # Reorder dimensions	
-        # (256, 256, 3) -> (3, 256, 256)	
-        img = img.permute(2, 0, 1)	
+        if self.transform:
+            augs = self.transform(image=img, mask=mask)
+            img = augs["image"]
+            mask = augs["mask"]
+
+        if self.mask_transform:
+            augs = self.mask_transform(image=mask, mask=mask)
+            mask = augs["mask"]
         
-        # Resize (if specified)	
-        if self.transform:	
-            img = self.transform(img)	
+        img = torch.tensor(img).permute(2, 0, 1)
+        mask = torch.tensor(mask)
             
-        return img.float(), label.int()
+        return img.float(), mask.int()
     
     def __len__(self):
         return len(self.records)
@@ -105,20 +104,22 @@ class ContrailsDataModule(pl.LightningDataModule):
         self.train_transform, self.val_transform = self._init_transforms()
     
     def _init_transforms(self):
-        # # Optional: random-resize crop transform
-        # if self.hparams.no_transform == True:
-        #     train_transforms = None
-        # else:
-        #     train_transforms = transforms.Compose([
-        #         transforms.RandomResizedCrop(self.hparams.img_size, scale=(self.hparams.rand_scale_min, 1.0), antialias=True),
-        #     ])
+        # Optional Transforms
+        if self.hparams.no_transform == True:
+            train_transforms = None
+            valid_transforms = None
+        else:
+            train_transforms = A.Compose([
+                    A.RandomSizedCrop(min_max_height=(int(256*self.hparams.rand_scale_min), 256), height=256, width=256, p=1.0),
+                    A.Resize(height=self.hparams.img_size, width=self.hparams.img_size)
+                ])
+            valid_transforms = A.Compose([
+                A.Resize(height=self.hparams.img_size, width=self.hparams.img_size),
+            ])
 
-        # valid_transforms = transforms.Compose([
-        #     transforms.Resize(self.hparams.img_size, antialias=True),
-        # ])
-        # return train_transforms, valid_transforms
-        return None, None
-    
+        return train_transforms, valid_transforms
+
+
     def setup(self, stage):        
         if stage == "fit" or stage is None:
             self.train_dataset = self._dataset(train=True, transform=self.train_transform)
