@@ -20,16 +20,14 @@ import segmentation_models_pytorch as smp
 # Models
 from .models.my_models import Unet, UnetPlusPlus, MAnet
 from .models.timm_unet import CustomUnet
-from .models.unet_3plus import UNet_3Plus
 
 class ContrailsDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, val_fold, train_all, comp_val, img_size, train=True, transform=None):
+    def __init__(self, data_dir, img_size, train=True, transform=None):
         self.data_dir = data_dir
         self.trn = train
-        self.val_fold = val_fold
         self.transform = transform
-        self.records = self.load_records(train_all, comp_val)
-        # Final mask shape mus tbe 256x256
+        self.records = self.load_records()
+        # Final mask shape must be 256x256
         if img_size != 256:
             self.mask_transform = A.Compose([
                 A.Resize(height=256, width=256, interpolation=cv2.INTER_NEAREST)
@@ -37,27 +35,15 @@ class ContrailsDataset(torch.utils.data.Dataset):
         else:	
             self.mask_transform = None
 
-    def load_records(self, train_all, comp_val):
-
-        # TODO: remove comp_val parameter
+    def load_records(self):
         train_df = pd.read_csv(self.data_dir + "train_df.csv")
         valid_df = pd.read_csv(self.data_dir + "valid_df.csv")
 
         # Train on all data
-        if train_all == True:
-            if self.trn == True:
-                return train_df["record_id"].values
-            else:
-                return valid_df["record_id"].values
-            
-        # OOF Validation (only use train_df)
-        elif train_all == False:
-            if self.trn == True:
-                train_df = train_df[train_df.fold != self.val_fold]
-                return train_df["record_id"].values
-            else:
-                train_df = train_df[train_df.fold == self.val_fold]
-                return train_df["record_id"].values
+        if self.trn == True:
+            return train_df["record_id"].values
+        else:
+            return valid_df["record_id"].values
     
     def __getitem__(self, index):
         fpath = str(self.records[index])
@@ -80,7 +66,7 @@ class ContrailsDataset(torch.utils.data.Dataset):
         img = torch.tensor(img).permute(2, 0, 1)
         mask = torch.tensor(mask)
             
-        return img.float(), mask.int()
+        return img.float(), mask.int(), int(fpath)
     
     def __len__(self):
         return len(self.records)
@@ -91,9 +77,6 @@ class ContrailsDataModule(pl.LightningDataModule):
         data_dir: str,
         batch_size: int,
         num_workers: int,
-        val_fold: int,
-        train_all: bool,
-        comp_val: bool,
         img_size: int,
         rand_scale_min: float,
         rand_scale_prob: float,
@@ -116,9 +99,9 @@ class ContrailsDataModule(pl.LightningDataModule):
         # w/ Transformations
         else:
             train_transforms = A.Compose([
-                    A.RandomSizedCrop(min_max_height=(int(256*self.hparams.rand_scale_min), 256), height=256, width=256, p=self.hparams.rand_scale_prob),
-                    A.Resize(height=self.hparams.img_size, width=self.hparams.img_size)
-                ])
+                # A.RandomSizedCrop(min_max_height=(int(256*self.hparams.rand_scale_min), 256), height=256, width=256, p=self.hparams.rand_scale_prob),
+                A.Resize(height=self.hparams.img_size, width=self.hparams.img_size)
+            ])
             valid_transforms = A.Compose([
                 A.Resize(height=self.hparams.img_size, width=self.hparams.img_size),
             ])
@@ -137,11 +120,8 @@ class ContrailsDataModule(pl.LightningDataModule):
     def _dataset(self, train, transform):
         return ContrailsDataset(
             data_dir=self.hparams.data_dir, 
-            val_fold=self.hparams.val_fold,
             train=train,
-            train_all=self.hparams.train_all,
-            comp_val=self.hparams.comp_val,
-            img_size = self.hparams.img_size,
+            img_size=self.hparams.img_size,
             transform=transform
             )
     
@@ -170,14 +150,13 @@ class ContrailsModule(pl.LightningModule):
         decoder_type: str,
         model_weights: str,
         run_name: str,
-        save_weights: bool,
+        save_model: bool,
         save_preds: bool,
         epochs: int,
         scheduler: str,
         fast_dev_run: bool,
         lr_min: float,
         num_cycles: int,
-        val_fold: int,
         interpolate: str,
     ):
         super().__init__()
@@ -274,7 +253,7 @@ class ContrailsModule(pl.LightningModule):
         return self.model(x)
     
     def _shared_step(self, batch, stage, batch_idx):
-        x, y = batch
+        x, y, fpath = batch
         y_logits = self(x) # Raw logits
         loss = self.loss_fn(y_logits, y)
 
@@ -284,16 +263,20 @@ class ContrailsModule(pl.LightningModule):
             
             # Save Preds: Dice Threshold, Ensemble, etc
             if self.hparams.save_preds:
-                save_preds = torch.stack([
-                    y_logits.squeeze(dim=1),
-                    y.squeeze(),
-                ])
-                torch.save(save_preds, "{}{}/fold_{}_pred_{}.pt".format(
-                    self.hparams.preds_dir, 
-                    self.hparams.run_name,
-                    self.hparams.val_fold, 
-                    batch_idx,
-                    ))
+                
+                # Save each pred as its own tensor
+                for i, img_idx in enumerate(fpath):
+                    save_preds = torch.stack([
+                        y_logits[i, 0, :, :],
+                        y[i]
+                    ])
+
+                    torch.save(save_preds, "{}{}/{}.pt".format(
+                        self.hparams.preds_dir, 
+                        self.hparams.run_name,
+                        img_idx, 
+                        batch_idx,
+                        ))
 
         # Log Loss
         self._log(stage, loss, batch_size=len(x))
@@ -311,6 +294,6 @@ class ContrailsModule(pl.LightningModule):
             self.log_dict(self.metrics[f"{stage}_metrics"], prog_bar=True, batch_size=batch_size)
 
     def on_train_end(self):
-        if self.hparams.fast_dev_run == False and self.hparams.save_weights == True:
-            torch.save(self.model.state_dict(), "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.run_name))
+        if self.hparams.fast_dev_run == False and self.hparams.save_model == True:
+            torch.save(self.model, "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.run_name))
         return

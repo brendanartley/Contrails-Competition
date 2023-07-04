@@ -21,7 +21,7 @@ class Unet(smp.Unet):
 class UnetPlusPlus(smp.UnetPlusPlus):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True)])
+        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=transforms.InterpolationMode.NEAREST)])
 
     def forward(self, x):
         
@@ -38,7 +38,7 @@ class UnetPlusPlus(smp.UnetPlusPlus):
 class MAnet(smp.MAnet):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True)])
+        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=transforms.InterpolationMode.NEAREST)])
 
     def forward(self, x):
         

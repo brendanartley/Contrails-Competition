@@ -19,14 +19,14 @@ config = SimpleNamespace(
 )
 
 
-def get_dice_score(fold_path, threshold=0.5):
+def get_dice_score(model_name, threshold=0.5):
     # Define Metric
     metric = torchmetrics.Dice(average = 'micro', threshold = threshold)
 
-    for batch_path in os.listdir(os.path.join(config.preds_dir, fold_path)):
+    for img_idx in os.listdir(os.path.join(config.preds_dir, model_name)):
         
         # Load preds + truth
-        loaded_tensor = torch.load(os.path.join(config.preds_dir, fold_path, batch_path), map_location=config.device)
+        loaded_tensor = torch.load(os.path.join(config.preds_dir, model_name, img_idx), map_location=config.device)
 
         pred = loaded_tensor[0, ...]
         truth = loaded_tensor[1, ...].int()
@@ -41,27 +41,23 @@ def get_best_thresholds():
     all_thresholds = {k:0 for k in config.all_pred_dirs}
 
     # Iterate over all folders
-    for fold_path in config.all_pred_dirs:
-
-        # ---------- Baseline ----------
-        # base_dice = get_dice_score(fold_path=fold_path, threshold=0.5)
-        # print("Dice: {:.6f}".format(base_dice))
+    for model_name in config.all_pred_dirs:
         
         # Iterate over predictions
         best_dice = 0
         best_threshold = 0
 
-        for current_threshold in tqdm(np.arange(-0.50, 0.51, 0.04)):
+        for current_threshold in tqdm(np.concatenate([np.array([-5.0, -2.0, -1.0]), np.arange(-0.50, 0.51, 0.04)])):
             # Get dice score
-            current_dice = get_dice_score(fold_path=fold_path, threshold=current_threshold)
+            current_dice = get_dice_score(model_name=model_name, threshold=current_threshold)
 
             # Update if score is better
             if current_dice > best_dice:
                 best_dice = current_dice
                 best_threshold = current_threshold
-                all_thresholds[fold_path] = np.round(best_threshold, 2)
+                all_thresholds[model_name] = np.round(best_threshold, 2)
         print()
-        print("Model: {}  Best-Thresh: {:.2f} Best-Dice: {:.6f}".format(fold_path, best_threshold, best_dice))
+        print("Model: {}  Best-Thresh: {:.2f} Best-Dice: {:.6f}".format(model_name, best_threshold, best_dice))
     
     return all_thresholds
 

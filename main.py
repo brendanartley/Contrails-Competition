@@ -13,8 +13,8 @@ DATA_DIR = data["DATA_DIR"]
 # default configuration parameters
 config = SimpleNamespace(
     project = "Contrails-ICRGW",
-    # data_dir = DATA_DIR + "/data/bartley/gpu_test/contrails-images-ash-color/",    
-    data_dir = DATA_DIR + "bartley/gpu_test/my-ash-contrails-data/",
+    data_dir = DATA_DIR + "/bartley/gpu_test/contrails-images-ash-color/",    
+    # data_dir = DATA_DIR + "bartley/gpu_test/my-ash-contrails-data/",
     model_save_dir = DATA_DIR + "bartley/gpu_test/models/segmentation/",
     preds_dir = DATA_DIR + "bartley/gpu_test/preds/",
     torch_cache = DATA_DIR + "bartley/gpu_test/TORCH_CACHE/",
@@ -25,12 +25,9 @@ config = SimpleNamespace(
     rand_scale_min = 0.95,
     rand_scale_prob = 0.5,
     batch_size = 32,
-    epochs = 15,
-    val_fold = 0,
-    num_folds = 5,
-    all_folds = False,
+    epochs = 10,
     lr = 2e-4,
-    lr_min = 1e-5,
+    lr_min = 2e-4,
     num_cycles = 5,
     scheduler = "CosineAnnealingLR",
     interpolate = "nearest",
@@ -56,13 +53,9 @@ def parse_args():
     parser.add_argument("--decoder_type", type=str, default=config.decoder_type, help="Model type (seg/timm).")
     parser.add_argument("--model_weights", type=str, default=config.model_weights, help="Model weights file location (used for validation run).")
     parser.add_argument("--data_dir", type=str, default=config.data_dir, help="Data directory path.")
-    parser.add_argument('--train_all', action='store_true', help='Indicator wether to train on all the data.')
-    parser.add_argument('--comp_val', action='store_true', help='Indicator wether to train on all the data.')
-    parser.add_argument('--save_weights', action='store_true', help='Indicator wether to save model weights.')
+    parser.add_argument('--save_model', action='store_true', help='Indicator wether to save model weights.')
     parser.add_argument('--fast_dev_run', action='store_true', help='Check PL modules are set up correctly.')
     parser.add_argument('--save_preds', action='store_true', help='Check PL modules are set up correctly.')
-    parser.add_argument("--val_fold", type=int, default=config.val_fold, help="OOF validation fold.")
-    parser.add_argument('--all_folds', action='store_true', help='Do full K-Fold validation.')
     parser.add_argument("--overfit_batches", type=int, default=config.overfit_batches, help="Num of batches to overfit (sanity check).")
     parser.add_argument('--no_wandb', action='store_true', help='Wether to log with weights and biases.')
     parser.add_argument('--no_transform', action='store_true', help='Wether to apply transformations to training data.')

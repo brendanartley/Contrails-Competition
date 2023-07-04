@@ -1,6 +1,6 @@
 import lightning.pytorch as pl
 import torch
-import os
+import os, shutil
 
 from contrails_pl.modules import ContrailsModule, ContrailsDataModule
 
@@ -22,16 +22,15 @@ def validate(
 
     # Create directory for saving predictions
     if config.save_preds:
-        if not os.path.exists(config.preds_dir + str(experiment_name)):
-            os.mkdir(config.preds_dir + str(experiment_name))
+        # Clear dir of previous predictions
+        shutil.rmtree(config.preds_dir + str(experiment_name))
+        os.mkdir(config.preds_dir + str(experiment_name))
+
 
     data_module = ContrailsDataModule(
         data_dir = config.data_dir,
         batch_size = config.batch_size,
         num_workers = config.num_workers,
-        val_fold = config.val_fold,
-        train_all = config.train_all,
-        comp_val = config.comp_val,
         img_size = config.img_size,
         rand_scale_min = config.rand_scale_min,
         rand_scale_prob = config.rand_scale_prob,
@@ -47,13 +46,12 @@ def validate(
         decoder_type = config.decoder_type,
         model_weights = config.model_weights,
         run_name = None,
-        save_weights = config.save_weights,
+        save_model = config.save_model,
         save_preds = config.save_preds,
         epochs = config.epochs,
         scheduler = config.scheduler,
         fast_dev_run = config.fast_dev_run,
         num_cycles = config.num_cycles,
-        val_fold = config.val_fold,
         interpolate = config.interpolate,
     )
 
