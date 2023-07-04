@@ -5,8 +5,10 @@ import torch.optim as optim
 import torchmetrics
 import torchinfo
 import torchvision
-import albumentations as A
 # import bitsandbytes as bnb
+
+import cv2
+import albumentations as A
 
 import timm
 from timm.scheduler.cosine_lr import CosineLRScheduler
@@ -18,6 +20,7 @@ import segmentation_models_pytorch as smp
 # Models
 from .models.my_models import Unet, UnetPlusPlus, MAnet
 from .models.timm_unet import CustomUnet
+from .models.unet_3plus import UNet_3Plus
 
 class ContrailsDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, val_fold, train_all, comp_val, img_size, train=True, transform=None):
@@ -26,39 +29,35 @@ class ContrailsDataset(torch.utils.data.Dataset):
         self.val_fold = val_fold
         self.transform = transform
         self.records = self.load_records(train_all, comp_val)
-        # Final mask shape to 256x256
+        # Final mask shape mus tbe 256x256
         if img_size != 256:
             self.mask_transform = A.Compose([
-                A.Resize(height=256, width=256)
+                A.Resize(height=256, width=256, interpolation=cv2.INTER_NEAREST)
             ])
         else:	
             self.mask_transform = None
 
     def load_records(self, train_all, comp_val):
 
-        # COMPETITION validation set
-        if comp_val == True:
-            if self.trn == False:
-                df = pd.read_csv(self.data_dir + "valid_df.csv")
-                print("Comp val length: ", len(df))
-                return df["record_id"].values
-        
-        df = pd.read_csv(self.data_dir + "train_df.csv")
+        # TODO: remove comp_val parameter
+        train_df = pd.read_csv(self.data_dir + "train_df.csv")
+        valid_df = pd.read_csv(self.data_dir + "valid_df.csv")
 
         # Train on all data
         if train_all == True:
-            if self.trn == False:
-                return [], []
-            else:
-                return df["record_id"].values
-            
-        # OOF Validation
-        else:
             if self.trn == True:
-                df = df[df.fold != self.val_fold]
+                return train_df["record_id"].values
             else:
-                df = df[df.fold == self.val_fold]
-            return df["record_id"].values
+                return valid_df["record_id"].values
+            
+        # OOF Validation (only use train_df)
+        elif train_all == False:
+            if self.trn == True:
+                train_df = train_df[train_df.fold != self.val_fold]
+                return train_df["record_id"].values
+            else:
+                train_df = train_df[train_df.fold == self.val_fold]
+                return train_df["record_id"].values
     
     def __getitem__(self, index):
         fpath = str(self.records[index])
@@ -97,6 +96,7 @@ class ContrailsDataModule(pl.LightningDataModule):
         comp_val: bool,
         img_size: int,
         rand_scale_min: float,
+        rand_scale_prob: float,
         no_transform: bool,
     ):
         super().__init__()
@@ -104,13 +104,19 @@ class ContrailsDataModule(pl.LightningDataModule):
         self.train_transform, self.val_transform = self._init_transforms()
     
     def _init_transforms(self):
-        # Optional Transforms
+        # No transforms: (except reshape)
         if self.hparams.no_transform == True:
-            train_transforms = None
-            valid_transforms = None
+            train_transforms = A.Compose([
+                    A.Resize(height=self.hparams.img_size, width=self.hparams.img_size)
+                ])
+            valid_transforms = A.Compose([
+                    A.Resize(height=self.hparams.img_size, width=self.hparams.img_size),
+                ])
+            
+        # w/ Transformations
         else:
             train_transforms = A.Compose([
-                    A.RandomSizedCrop(min_max_height=(int(256*self.hparams.rand_scale_min), 256), height=256, width=256, p=1.0),
+                    A.RandomSizedCrop(min_max_height=(int(256*self.hparams.rand_scale_min), 256), height=256, width=256, p=self.hparams.rand_scale_prob),
                     A.Resize(height=self.hparams.img_size, width=self.hparams.img_size)
                 ])
             valid_transforms = A.Compose([
@@ -143,10 +149,7 @@ class ContrailsDataModule(pl.LightningDataModule):
         return self._dataloader(self.train_dataset, train=True)
     
     def val_dataloader(self):
-        if self.hparams.train_all == False:
-            return self._dataloader(self.val_dataset, train=False)
-        else:
-            return []
+        return self._dataloader(self.val_dataset, train=False)
 
     def _dataloader(self, dataset, train=False):
         return torch.utils.data.DataLoader(

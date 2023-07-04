@@ -4,6 +4,7 @@ import os
 from tqdm import tqdm
 from types import SimpleNamespace
 import argparse
+import numpy as np
 
 """
 Finds the best dice threshold for a set of predictions.
@@ -11,82 +12,94 @@ Finds the best dice threshold for a set of predictions.
 
 config = SimpleNamespace(
     preds_dir = "/data/bartley/gpu_test/preds/",
-    # all_pred_dirs = ["fresh-sunset-131", "elated-oath-130", "firm-butterfly-128", "pious-sun-127", "drawn-cloud-126"],
-    all_pred_dirs = ["None_0", "None"],
-    ensemble = True,
+    all_pred_dirs = ["olive-dew-339", "mild-dew-340", "volcanic-morning-341"],
+    # all_pred_dirs = ["None_0", "None"],
+    ensemble = False,
     device = torch.device("cpu"),
 )
 
 
-def get_dice_score(threshold=0.5):
+def get_dice_score(fold_path, threshold=0.5):
     # Define Metric
     metric = torchmetrics.Dice(average = 'micro', threshold = threshold)
 
-    if config.ensemble == False:
-        # Iterate over preds
-        for fold_path in config.all_pred_dirs:
-            for batch_path in os.listdir(os.path.join(config.preds_dir, fold_path)):
-                
-                # Load preds + truth
-                loaded_tensor = torch.load(os.path.join(config.preds_dir, fold_path, batch_path), map_location=config.device)
+    for batch_path in os.listdir(os.path.join(config.preds_dir, fold_path)):
+        
+        # Load preds + truth
+        loaded_tensor = torch.load(os.path.join(config.preds_dir, fold_path, batch_path), map_location=config.device)
 
-                pred = loaded_tensor[0, ...]
-                truth = loaded_tensor[1, ...].int()
-                
-                # Update metric
-                metric.update(pred, truth)
+        pred = loaded_tensor[0, ...]
+        truth = loaded_tensor[1, ...].int()
 
-    elif config.ensemble == True:
-            for batch_path in os.listdir(os.path.join(config.preds_dir, config.all_pred_dirs[0])):
-                # Iterate over all preds
-                all_preds = []
-                for i, fold_path in enumerate(config.all_pred_dirs):
-                    loaded_tensor = torch.load(os.path.join(config.preds_dir, fold_path, batch_path), map_location=config.device)
-                    # extract label on first iteration
-                    if i == 0:
-                        labels = loaded_tensor[1, ...].int()
-                        
-                    all_preds.append(
-                        loaded_tensor[0, ...]
-                    )
-                avg_preds = torch.sum(torch.stack(all_preds), dim=0) / len(all_preds)
-                
-                # Update metric
-                metric.update(avg_preds, labels)
+        # Update metric
+        metric.update(pred, truth)
 
     return metric.compute().item()
 
-def check_dice_scores():
-    # ---------- Baseline ----------
-    base_dice = get_dice_score(threshold=0.5)
-    print("Dice: {:.6f}".format(base_dice))
+def get_best_thresholds():
 
-    # ---------- Test different thresholds -----------
-    # Iterate over predictions
-    best_dice = 0
-    best_threshold = 0
-    xs = []
-    ys = []
+    all_thresholds = {k:0 for k in config.all_pred_dirs}
 
-    for i in tqdm(range(-500, 100, 50)):
-        # Get dice score
-        current_threshold = i/100
-        current_dice = get_dice_score(threshold=current_threshold)
+    # Iterate over all folders
+    for fold_path in config.all_pred_dirs:
 
-        # Update if score is better
-        if current_dice > best_dice:
-            best_dice = current_dice
-            best_threshold = current_threshold
+        # ---------- Baseline ----------
+        # base_dice = get_dice_score(fold_path=fold_path, threshold=0.5)
+        # print("Dice: {:.6f}".format(base_dice))
+        
+        # Iterate over predictions
+        best_dice = 0
+        best_threshold = 0
 
-        xs.append(current_threshold)
-        ys.append(current_dice)
-        print("Thresh: {:.2f} Dice: {:.6f}".format(current_threshold, current_dice))
+        for current_threshold in tqdm(np.arange(-0.50, 0.51, 0.04)):
+            # Get dice score
+            current_dice = get_dice_score(fold_path=fold_path, threshold=current_threshold)
 
-    print("xs =", xs)
-    print("ys =", ys)
-    print()
-    print("Best-Thresh: {:.2f} Best-Dice: {:.6f}".format(best_threshold, best_dice))
-    return
+            # Update if score is better
+            if current_dice > best_dice:
+                best_dice = current_dice
+                best_threshold = current_threshold
+                all_thresholds[fold_path] = np.round(best_threshold, 2)
+        print()
+        print("Model: {}  Best-Thresh: {:.2f} Best-Dice: {:.6f}".format(fold_path, best_threshold, best_dice))
+    
+    return all_thresholds
+
+def dice_ensemble(all_thresholds):
+
+    print(all_thresholds)
+
+    # Define Metric
+    metric = torchmetrics.Dice(average = 'micro', threshold=0.5)
+
+    for batch_path in tqdm(os.listdir(os.path.join(config.preds_dir, config.all_pred_dirs[0]))):
+
+        cur_batch = []
+        for fold_path in config.all_pred_dirs:
+            
+            # Load preds + truth
+            loaded_tensor = torch.load(os.path.join(config.preds_dir, fold_path, batch_path), map_location=config.device)
+            pred = loaded_tensor[0, ...]
+            truth = loaded_tensor[1, ...].int()
+
+            # Make predictions
+            new_mask = torch.zeros_like(pred)
+            new_mask[pred >= all_thresholds[fold_path]] = 1
+            new_mask[pred < all_thresholds[fold_path]] = 0
+            new_mask = new_mask.squeeze()
+
+            # Add to pred ensemble
+            cur_batch.append(new_mask)
+
+        # Take the median of all preds
+        cur_batch = torch.stack(cur_batch).int()
+        cur_batch = torch.median(cur_batch, dim=0)[0]
+
+        # Update metric
+        metric.update(pred, truth)
+
+    return metric.compute().item()
+
 
 def parse_args(config):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -101,7 +114,9 @@ def parse_args(config):
     return config
 
 def main():
-    check_dice_scores()
+    all_thresholds = get_best_thresholds()
+    ensemble_score = dice_ensemble(all_thresholds)
+    print("Final: ", ensemble_score)
     return
 
 if __name__ == "__main__":

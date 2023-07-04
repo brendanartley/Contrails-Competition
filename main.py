@@ -18,13 +18,14 @@ config = SimpleNamespace(
     model_save_dir = DATA_DIR + "bartley/gpu_test/models/segmentation/",
     preds_dir = DATA_DIR + "bartley/gpu_test/preds/",
     torch_cache = DATA_DIR + "bartley/gpu_test/TORCH_CACHE/",
-    model_name = "efficientnetv2_rw_t.ra2_in1k",
+    model_name = "tu-maxvit_rmlp_tiny_rw_256.sw_in1k",
     model_weights = None, # Used for validation run
     decoder_type = "Unet",
     img_size = 256,
-    rand_scale_min = 0.9,
+    rand_scale_min = 0.95,
+    rand_scale_prob = 0.5,
     batch_size = 32,
-    epochs = 5,
+    epochs = 15,
     val_fold = 0,
     num_folds = 5,
     all_folds = False,
@@ -69,6 +70,7 @@ def parse_args():
     parser.add_argument("--precision", type=str, default=config.precision, help="Precision to use (AMP).")
     parser.add_argument("--img_size", type=int, default=config.img_size, help="Interpolates to an image size (orig = 256x256).")
     parser.add_argument("--rand_scale_min", type=float, default=config.rand_scale_min, help="Lower bound of random crop augmentation.")
+    parser.add_argument("--rand_scale_prob", type=float, default=config.rand_scale_prob, help="Pct chance of random crop augmentation.")
     parser.add_argument("--batch_size", type=int, default=config.batch_size, help="Num data points per batch.")
     parser.add_argument("--accumulate_grad_batches", type=int, default=config.accumulate_grad_batches, help="Number of steps before each optimizer step.")
     parser.add_argument("--epochs", type=int, default=config.epochs, help="Number of epochs to train.")

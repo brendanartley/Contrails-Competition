@@ -34,6 +34,7 @@ def validate(
         comp_val = config.comp_val,
         img_size = config.img_size,
         rand_scale_min = config.rand_scale_min,
+        rand_scale_prob = config.rand_scale_prob,
         no_transform = config.no_transform,
         )
 

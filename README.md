@@ -6,8 +6,12 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 ### Ideas
 
+- .int() does truncation, not rounding! Look into using a proper rounding?
+- How come bigger images worked before? Check broken code and see why.
+
 - See why UnetPlusPlus is so slow w/ 384 images
-- Figure out randomresizecrop problem..
+    - Computation complexity is too high
+    - Try: Unet3+ https://github.com/ZJUGiveLab/UNet-Version
 
 - Post processing in paper (D. Converting binary masks to line segments)
     - They use OpenCVs LineSegmentDetector in the paper..
@@ -17,17 +21,7 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 - Automatic contrail tracking paper. https://amt.copernicus.org/articles/3/1089/2010/amt-3-1089-2010.pdf
 
-- Try and use SOTA models that are top of the imagenetLB
-    - https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet-real.csv
-
-
 ### Preprint Notes / Findings
-
-- Using 3 frames before yields the best results for resnet3D
-    - 0B-0A = 71.4
-    - 1B-0A = 71.7
-    - 3B-0A = 72.7
-    - 4B-0A = 72.0
 
 - Best per-pixel threshold is 0.4 (optimize this by writing prediction to disk and comparing score across thresholds)
 
@@ -120,15 +114,16 @@ CUDA_VISIBLE_DEVICES=2 python main.py --decoder_type="Unet" --model_name="tu-max
 CUDA_VISIBLE_DEVICES=3 python main.py --decoder_type="UnetPlusPlus" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=15
 
 CUDA_VISIBLE_DEVICES=0 python main.py --decoder_type="Unet" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=1e-4 --batch_size=16 --epochs=18  --no_wandb
-CUDA_VISIBLE_DEVICES=1 python main.py --decoder_type="CustomUnet" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=1e-4 --batch_size=16 --epochs=18 --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/"
+CUDA_VISIBLE_DEVICES=1 python main.py --decoder_type="Unet" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=1e-4 --batch_size=16 --epochs=18 --no_transform
 
-CUDA_VISIBLE_DEVICES=1 python main.py --decoder_type="Unet" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=18 --no_wandb
+ --fast_dev_run
 
-CUDA_VISIBLE_DEVICES=3 python main.py --decoder_type="CustomUnet" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=18 --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --all_folds
-
-CUDA_VISIBLE_DEVICES=1 python main.py --decoder_type="UnetPlusPlus" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=18 --all_folds
-
-CUDA_VISIBLE_DEVICES=2 python main.py --decoder_type="UnetPlusPlus" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --epochs=18 --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --all_folds
+CUDA_VISIBLE_DEVICES=0 python main.py --no_wandb
+CUDA_VISIBLE_DEVICES=2 python main.py --no_wandb --train_all
+CUDA_VISIBLE_DEVICES=3 python main.py --no_wandb --train_all --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/"
+CUDA_VISIBLE_DEVICES=1 python main.py --decoder_type="UnetPlusPlus"
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_224.sw_in12k_ft_in1k" --img_size=224
+CUDA_VISIBLE_DEVICES=3 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_224.sw_in12k_ft_in1k" --img_size=224
 
 CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/frunb182
 CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/nwufgbh2
@@ -151,3 +146,7 @@ CUDA_VISIBLE_DEVICES=2 python main.py --comp_val --save_preds --model_type="timm
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
 #### Submit.
+
+CUDA_VISIBLE_DEVICES=0 python main.py --decoder_type="UnetPlusPlus" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --save_preds --save_weights --seed=0 --epochs=13
+CUDA_VISIBLE_DEVICES=2 python main.py --decoder_type="UnetPlusPlus" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --save_preds --save_weights --seed=1 --epochs=13
+CUDA_VISIBLE_DEVICES=3 python main.py --decoder_type="UnetPlusPlus" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --save_preds --save_weights --seed=2 --epochs=13
