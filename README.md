@@ -6,8 +6,10 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 ### Ideas
 
-- Remove duplicates from the training data.
-    - https://github.com/visual-layer/fastdup
+- Might be able to use some stuff here: https://github.com/open-mmlab
+
+- Try some different loss functions?
+    - https://github.com/shruti-jadon/Semantic-Segmentation-Loss-Functions/blob/master/loss_functions.py
 
 Add model checkpoint callback to save best weights.
     - https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html
@@ -17,7 +19,6 @@ Add model checkpoint callback to save best weights.
 
 - Efficient UnetPlusPlus: https://github.com/jlcsilva/EfficientUNetPlusPlus
 - SOTA Medical Segmentation Competition Solutions: https://github.com/JunMa11/SOTA-MedSeg
-- How come bigger images worked before? Check broken code and see why.
 
 - See why UnetPlusPlus is so slow w/ 384 images
     - Computation complexity is too high?
@@ -105,18 +106,19 @@ CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
 CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
 
-CUDA_VISIBLE_DEVICES=1 python main.py --model_name="tu-maxxvit_rmlp_tiny_rw_256.sw_in1k"
-CUDA_VISIBLE_DEVICES=3 python main.py --model_name="tu-maxxvit_rmlp_small_rw_256.sw_in1k" --decoder_type="UnetPlusPlus"
-CUDA_VISIBLE_DEVICES=0 python main.py --model_name="tu-coatnet_rmlp_2_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=1e-4 --batch_size=16 --save_preds
-CUDA_VISIBLE_DEVICES=1 python main.py --model_name="tu-maxvit_base_tf_384.in21k_ft_in1k" --img_size=384 --lr=7e-5 --batch_size=12 --save_preds --no_wandb
+CUDA_VISIBLE_DEVICES=0 python main.py --loss="Tversky" --tversky_pair="0.6_0.4"
+CUDA_VISIBLE_DEVICES=1 python main.py --loss="Tversky" --tversky_pair="0.4_0.6"
+CUDA_VISIBLE_DEVICES=1 python main.py --smooth=0.2
+CUDA_VISIBLE_DEVICES=2 python main.py --smooth=0.3
+CUDA_VISIBLE_DEVICES=3 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16
 
-`['tu-efficientnetv2_rw_t.ra2_in1k','tu-efficientnetv2_rw_s.ra2_in1k','tu-efficientnetv2_rw_m.agc_in1k', 'maxxvit_rmlp_small_rw_256.sw_in1k', "mit_b5", "mit_b4"]`
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name="tu-maxxvit_rmlp_small_rw_256.sw_in1k" --decoder_type="UnetPlusPlus"
+CUDA_VISIBLE_DEVICES=3 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=7e-5 --batch_size=16
 
-
-CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/c3tqwif8
-CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/c3tqwif8
-CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/c3tqwif8
-CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/c3tqwif8
+CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/qf8h8sb9
+CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/qf8h8sb9
+CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/qf8h8sb9
+CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/qf8h8sb9
 
 brendanartley/Contrails-ICRGW/ccqo954
 
@@ -124,7 +126,7 @@ brendanartley/Contrails-ICRGW/ccqo954
 CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16 --save_preds
 
 #### Competition Validation
-CUDA_VISIBLE_DEVICES=1 python main.py --img_size=256 --batch_size=16 --model_weights="/data/bartley/gpu_test/models/segmentation/astral-spaceship-387.pt"
+CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/olive-gorge-380.pt" --img_size=512 --dice_threshold=-4.1
 
 #### Check dice threshold (edit model preds dir in code)
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py

@@ -35,7 +35,6 @@ def validate(
         rand_scale_min = config.rand_scale_min,
         rand_scale_prob = config.rand_scale_prob,
         no_transform = config.no_transform,
-        dup_threshold = config.dup_threshold,
         )
 
     module = ContrailsModule(
@@ -54,6 +53,8 @@ def validate(
         fast_dev_run = config.fast_dev_run,
         num_cycles = config.num_cycles,
         interpolate = config.interpolate,
+        smooth = config.smooth,
+        dice_threshold = config.dice_threshold,
     )
 
     # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark
@@ -75,5 +76,4 @@ def validate(
         gradient_clip_val = 1.0,
     )
     trainer.validate(module, datamodule=data_module)
-
     return

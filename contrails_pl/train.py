@@ -6,7 +6,7 @@ import os
 
 from contrails_pl.modules import ContrailsModule, ContrailsDataModule
 from contrails_pl.helpers import load_logger_and_callbacks
-
+from contrails_pl.convert_weights import load_and_save
 
 def train(
         config,
@@ -51,7 +51,6 @@ def train(
         rand_scale_min = config.rand_scale_min,
         rand_scale_prob = config.rand_scale_prob,
         no_transform = config.no_transform,
-        dup_threshold = config.dup_threshold,
         )
 
     module = ContrailsModule(
@@ -62,7 +61,7 @@ def train(
         preds_dir = config.preds_dir,
         decoder_type = config.decoder_type,
         model_weights = config.model_weights,
-        run_name = experiment_name,
+        experiment_name = experiment_name,
         save_model = config.save_model,
         save_preds = config.save_preds,
         epochs = config.epochs,
@@ -70,6 +69,10 @@ def train(
         fast_dev_run = config.fast_dev_run,
         num_cycles = config.num_cycles,
         interpolate = config.interpolate,
+        loss = config.loss,
+        smooth = config.smooth,
+        dice_threshold = config.dice_threshold,
+        tversky_pair = config.tversky_pair,
     )
 
     # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark
@@ -93,4 +96,7 @@ def train(
     trainer.fit(module, datamodule=data_module)
     trainer.validate(module, datamodule=data_module)
 
+    # Convert weights to SMP class (for easy loading)
+    if config.fast_dev_run == False and config.save_model == True:
+        load_and_save(config, experiment_name)
     return

@@ -14,7 +14,7 @@ DATA_DIR = data["DATA_DIR"]
 config = SimpleNamespace(
     project = "Contrails-ICRGW",
     data_dir = DATA_DIR + "/bartley/gpu_test/contrails-images-ash-color/",    
-    # data_dir = DATA_DIR + "bartley/gpu_test/my-ash-contrails-data/",
+    # data_dir = DATA_DIR + "/bartley/gpu_test/my-contrails-data/",
     model_save_dir = DATA_DIR + "bartley/gpu_test/models/segmentation/",
     preds_dir = DATA_DIR + "bartley/gpu_test/preds/",
     torch_cache = DATA_DIR + "bartley/gpu_test/TORCH_CACHE/",
@@ -30,9 +30,12 @@ config = SimpleNamespace(
     lr = 2e-4,
     lr_min = 1e-5,
     num_cycles = 5,
+    loss = "Dice",
     scheduler = "CosineAnnealingLR",
     interpolate = "nearest",
-    dup_threshold = 7,
+    smooth = 0.25,
+    dice_threshold = 0.5,
+    tversky_pair = "0.5_0.5",
     # -- Trainer Config --
     accelerator = "gpu",
     fast_dev_run = False,
@@ -48,7 +51,6 @@ config = SimpleNamespace(
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # ----- End RGB tests -----
     parser.add_argument("--scheduler", type=str, default=config.scheduler, help="Learning rate scheduler for the model to use.")
     parser.add_argument("--interpolate", type=str, default=config.interpolate, help="Interpolation method for the decoder.")
     parser.add_argument("--model_name", type=str, default=config.model_name, help="Encoder model to use for training.")
@@ -73,7 +75,10 @@ def parse_args():
     parser.add_argument("--num_cycles", type=int, default=config.num_cycles, help="Number of cycles for the cyclical cosine annealing LR.")
     parser.add_argument("--val_check_interval", type=float, default=config.val_check_interval, help="Number of batches between validation checks.")
     parser.add_argument("--num_workers", type=int, default=config.num_workers, help="Number of CPU cores to use.")
-    parser.add_argument("--dup_threshold", type=int, default=config.num_workers, help="The duplicate threshold to test. Lower == more duplicates. (0-5).")
+    parser.add_argument("--loss", type=str, default=config.loss, help="Loss function to use.")
+    parser.add_argument("--smooth", type=float, default=config.smooth, help="Smoothing factor on Dice Loss function.")
+    parser.add_argument("--dice_threshold", type=float, default=config.dice_threshold, help="Threshold for the GlobalDiceCoefficient.")
+    parser.add_argument("--tversky_pair", type=str, default=config.tversky_pair, help="alpha_beta pair for tversky loss.")
     args = parser.parse_args()
     
     # Update config w/ parameters passed through CLI

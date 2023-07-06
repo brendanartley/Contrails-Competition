@@ -12,8 +12,8 @@ Finds the best dice threshold for a set of predictions.
 
 config = SimpleNamespace(
     preds_dir = "/data/bartley/gpu_test/preds/",
-    all_pred_dirs = ["astral-spaceship-387", "olive-dew-339", "olive-gorge-380"],
-    # all_pred_dirs = ["olive-dew-339", "mild-dew-340", "volcanic-morning-341"],
+    # all_pred_dirs = ["astral-spaceship-387", "olive-dew-339", "olive-gorge-380"],
+    all_pred_dirs = ["olive-gorge-380"],
     # all_pred_dirs = ["None_0", "None"],
     ensemble = False,
     device = torch.device("cpu"),
@@ -48,7 +48,8 @@ def get_best_thresholds():
         best_dice = 0
         best_threshold = 0
 
-        for current_threshold in tqdm(np.concatenate([np.array([-5.0, -2.0, -1.0]), np.arange(-0.50, 0.51, 0.04)])):
+        # Find general area of best threshold
+        for current_threshold in tqdm(range(-10, 1, 1)):
             # Get dice score
             current_dice = get_dice_score(model_name=model_name, threshold=current_threshold)
 
@@ -57,6 +58,31 @@ def get_best_thresholds():
                 best_dice = current_dice
                 best_threshold = current_threshold
                 all_thresholds[model_name] = np.round(best_threshold, 2)
+
+        # Iterate over predictions
+        middle = best_threshold
+        best_dice = 0
+        best_threshold = 0
+
+        # Find more specific best threshold
+        for current_threshold in tqdm(np.arange(middle-0.5, middle+0.5, 0.04)):
+            # Get dice score
+            current_dice = get_dice_score(model_name=model_name, threshold=current_threshold)
+
+            # Update if score is better
+            if current_dice > best_dice:
+                best_dice = current_dice
+                best_threshold = current_threshold
+                all_thresholds[model_name] = np.round(best_threshold, 2)
+            # Get dice score
+            current_dice = get_dice_score(model_name=model_name, threshold=current_threshold)
+
+            # Update if score is better
+            if current_dice > best_dice:
+                best_dice = current_dice
+                best_threshold = current_threshold
+                all_thresholds[model_name] = np.round(best_threshold, 2)
+        
         print()
         print("Model: {}  Best-Thresh: {:.2f} Best-Dice: {:.6f}".format(model_name, best_threshold, best_dice))
     

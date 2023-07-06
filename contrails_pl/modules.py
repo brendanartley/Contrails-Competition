@@ -18,31 +18,28 @@ import numpy as np
 import segmentation_models_pytorch as smp
 
 # Models
-from .models.my_models import Unet, UnetPlusPlus, MAnet
+from .models.my_models import Unet, UnetPlusPlus
 from .models.timm_unet import CustomUnet
 
 class ContrailsDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, img_size, dup_threshold, train=True, transform=None):
+    def __init__(self, data_dir, img_size, train=True, transform=None):
         self.data_dir = data_dir
         self.trn = train
         self.transform = transform
-        self.dup_threshold = dup_threshold
-        # Final mask shape must be 256x256
+        self.img_size = img_size
+        
+        # Resize transform for IMG ONLY (so mask is resized only once)
         if img_size != 256:
-            self.mask_transform = A.Compose([
-                A.Resize(height=256, width=256, interpolation=cv2.INTER_NEAREST)
+            self.resize_transform = A.Compose([
+                A.Resize(height=img_size, width=img_size, interpolation=cv2.INTER_LINEAR)
             ])
         else:	
-            self.mask_transform = None
+            self.resize_transform = None
         self.records = self.load_records()
 
     def load_records(self):
 
-        # TESTING
-        train_df = pd.read_csv(self.data_dir + "train_df_2.csv")
-        train_df = train_df[train_df["duplicate_mins"] <= self.dup_threshold].reset_index(drop=True)
-
-        # train_df = pd.read_csv(self.data_dir + "train_df.csv")
+        train_df = pd.read_csv(self.data_dir + "train_df.csv")
         valid_df = pd.read_csv(self.data_dir + "valid_df.csv")
 
         # Train on all data
@@ -60,14 +57,15 @@ class ContrailsDataset(torch.utils.data.Dataset):
         img = con[..., :-1]	
         mask = con[..., -1]	
 
+        # RandomResizeCrop
         if self.transform:
             augs = self.transform(image=img, mask=mask)
             img = augs["image"]
             mask = augs["mask"]
 
-        if self.mask_transform:
-            augs = self.mask_transform(image=mask, mask=mask)
-            mask = augs["mask"]
+        # Resize img (not mask)
+        if self.img_size != 256:
+            img = self.resize_transform(image=img)["image"]
         
         img = torch.tensor(img).permute(2, 0, 1)
         mask = torch.tensor(mask)
@@ -87,7 +85,6 @@ class ContrailsDataModule(pl.LightningDataModule):
         rand_scale_min: float,
         rand_scale_prob: float,
         no_transform: bool,
-        dup_threshold: int,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -96,22 +93,15 @@ class ContrailsDataModule(pl.LightningDataModule):
     def _init_transforms(self):
         # No transforms: (except reshape)
         if self.hparams.no_transform == True:
-            train_transforms = A.Compose([
-                    A.Resize(height=self.hparams.img_size, width=self.hparams.img_size)
-                ])
-            valid_transforms = A.Compose([
-                    A.Resize(height=self.hparams.img_size, width=self.hparams.img_size),
-                ])
+            train_transforms = None
+            valid_transforms = None
             
         # w/ Transformations
         else:
             train_transforms = A.Compose([
                 A.RandomSizedCrop(min_max_height=(int(256*self.hparams.rand_scale_min), 256), height=256, width=256, p=self.hparams.rand_scale_prob),
-                A.Resize(height=self.hparams.img_size, width=self.hparams.img_size)
             ])
-            valid_transforms = A.Compose([
-                A.Resize(height=self.hparams.img_size, width=self.hparams.img_size),
-            ])
+            valid_transforms = None
 
         return train_transforms, valid_transforms
 
@@ -129,7 +119,6 @@ class ContrailsDataModule(pl.LightningDataModule):
             data_dir=self.hparams.data_dir, 
             train=train,
             img_size=self.hparams.img_size,
-            dup_threshold=self.hparams.dup_threshold,
             transform=transform
             )
     
@@ -157,7 +146,7 @@ class ContrailsModule(pl.LightningModule):
         preds_dir: str,
         decoder_type: str,
         model_weights: str,
-        run_name: str,
+        experiment_name: str,
         save_model: bool,
         save_preds: bool,
         epochs: int,
@@ -166,6 +155,10 @@ class ContrailsModule(pl.LightningModule):
         lr_min: float,
         num_cycles: int,
         interpolate: str,
+        loss: str,
+        smooth: float,
+        dice_threshold: float,
+        tversky_pair: str,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -179,7 +172,6 @@ class ContrailsModule(pl.LightningModule):
         seg_models = {
             "Unet": Unet,
             "UnetPlusPlus": UnetPlusPlus,
-            "MAnet": MAnet,
             "CustomUnet": CustomUnet,
         }
 
@@ -231,13 +223,25 @@ class ContrailsModule(pl.LightningModule):
         )
     
     def _init_loss_fn(self):
-        return smp.losses.DiceLoss(
-            mode = 'binary',
+        if self.hparams.loss == "Dice":
+            return smp.losses.DiceLoss(
+                mode = 'binary',
+                smooth = self.hparams.smooth,
+                )
+        elif self.hparams.loss == "Tversky":
+            alpha, beta = [float(x) for x in self.hparams.tversky_pair.split("_")]
+            print(alpha, beta)
+            return smp.losses.TverskyLoss(
+                mode = "binary",
+                alpha = alpha,
+                beta = beta,
             )
+        else:
+            raise ValueError(f"{self.hparams.loss} is not a recognized loss function.")
     
     def _init_metrics(self):
         metrics = {
-            "dice": torchmetrics.Dice(average = 'micro', threshold=0.5),
+            "dice": torchmetrics.Dice(average = 'micro', threshold=self.hparams.dice_threshold),
             }
         metric_collection = torchmetrics.MetricCollection(metrics)
         return torch.nn.ModuleDict(
@@ -282,7 +286,7 @@ class ContrailsModule(pl.LightningModule):
 
                     torch.save(save_preds, "{}{}/{}.pt".format(
                         self.hparams.preds_dir, 
-                        self.hparams.run_name,
+                        self.hparams.experiment_name,
                         img_idx, 
                         batch_idx,
                         ))
@@ -304,5 +308,5 @@ class ContrailsModule(pl.LightningModule):
 
     def on_train_epoch_end(self):
         if self.hparams.fast_dev_run == False and self.hparams.save_model == True:
-            torch.save(self.model, "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.run_name))
+            torch.save(self.model.state_dict(), "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.experiment_name))
         return
