@@ -12,7 +12,8 @@ Finds the best dice threshold for a set of predictions.
 
 config = SimpleNamespace(
     preds_dir = "/data/bartley/gpu_test/preds/",
-    all_pred_dirs = ["olive-dew-339", "mild-dew-340", "volcanic-morning-341"],
+    all_pred_dirs = ["astral-spaceship-387", "olive-dew-339", "olive-gorge-380"],
+    # all_pred_dirs = ["olive-dew-339", "mild-dew-340", "volcanic-morning-341"],
     # all_pred_dirs = ["None_0", "None"],
     ensemble = False,
     device = torch.device("cpu"),

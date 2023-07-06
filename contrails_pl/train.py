@@ -51,6 +51,7 @@ def train(
         rand_scale_min = config.rand_scale_min,
         rand_scale_prob = config.rand_scale_prob,
         no_transform = config.no_transform,
+        dup_threshold = config.dup_threshold,
         )
 
     module = ContrailsModule(

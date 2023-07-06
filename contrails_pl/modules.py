@@ -22,11 +22,11 @@ from .models.my_models import Unet, UnetPlusPlus, MAnet
 from .models.timm_unet import CustomUnet
 
 class ContrailsDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, img_size, train=True, transform=None):
+    def __init__(self, data_dir, img_size, dup_threshold, train=True, transform=None):
         self.data_dir = data_dir
         self.trn = train
         self.transform = transform
-        self.records = self.load_records()
+        self.dup_threshold = dup_threshold
         # Final mask shape must be 256x256
         if img_size != 256:
             self.mask_transform = A.Compose([
@@ -34,9 +34,15 @@ class ContrailsDataset(torch.utils.data.Dataset):
             ])
         else:	
             self.mask_transform = None
+        self.records = self.load_records()
 
     def load_records(self):
-        train_df = pd.read_csv(self.data_dir + "train_df.csv")
+
+        # TESTING
+        train_df = pd.read_csv(self.data_dir + "train_df_2.csv")
+        train_df = train_df[train_df["duplicate_mins"] <= self.dup_threshold].reset_index(drop=True)
+
+        # train_df = pd.read_csv(self.data_dir + "train_df.csv")
         valid_df = pd.read_csv(self.data_dir + "valid_df.csv")
 
         # Train on all data
@@ -81,6 +87,7 @@ class ContrailsDataModule(pl.LightningDataModule):
         rand_scale_min: float,
         rand_scale_prob: float,
         no_transform: bool,
+        dup_threshold: int,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -99,7 +106,7 @@ class ContrailsDataModule(pl.LightningDataModule):
         # w/ Transformations
         else:
             train_transforms = A.Compose([
-                # A.RandomSizedCrop(min_max_height=(int(256*self.hparams.rand_scale_min), 256), height=256, width=256, p=self.hparams.rand_scale_prob),
+                A.RandomSizedCrop(min_max_height=(int(256*self.hparams.rand_scale_min), 256), height=256, width=256, p=self.hparams.rand_scale_prob),
                 A.Resize(height=self.hparams.img_size, width=self.hparams.img_size)
             ])
             valid_transforms = A.Compose([
@@ -122,6 +129,7 @@ class ContrailsDataModule(pl.LightningDataModule):
             data_dir=self.hparams.data_dir, 
             train=train,
             img_size=self.hparams.img_size,
+            dup_threshold=self.hparams.dup_threshold,
             transform=transform
             )
     
@@ -175,8 +183,12 @@ class ContrailsModule(pl.LightningModule):
             "CustomUnet": CustomUnet,
         }
 
+        # Validation Run
+        if self.hparams.model_weights != None:
+            model = torch.load(self.hparams.model_weights)
+            
         # Training Run
-        if self.hparams.decoder_type in seg_models.keys():
+        elif self.hparams.decoder_type in seg_models.keys():
             model = seg_models[self.hparams.decoder_type](
                 encoder_name=self.hparams.model_name, 
                 in_channels=3,
@@ -184,10 +196,7 @@ class ContrailsModule(pl.LightningModule):
             )
         else:
             raise ValueError(f"{self.hparams.decoder_type} not recognized.")
-
-        # Validation: Load saved weights
-        if self.hparams.model_weights != None:
-            model.load_state_dict(torch.load(self.hparams.model_weights))
+        
         return model
     
     def _init_optimizer(self):
@@ -293,7 +302,7 @@ class ContrailsModule(pl.LightningModule):
         if stage == "val":
             self.log_dict(self.metrics[f"{stage}_metrics"], prog_bar=True, batch_size=batch_size)
 
-    def on_train_end(self):
+    def on_train_epoch_end(self):
         if self.hparams.fast_dev_run == False and self.hparams.save_model == True:
             torch.save(self.model, "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.run_name))
         return

@@ -6,19 +6,21 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 ### Ideas
 
-- Save Model By Default
-- Save Model After Every Epoch (in case training crashes)
+- Remove duplicates from the training data.
+    - https://github.com/visual-layer/fastdup
 
+Add model checkpoint callback to save best weights.
+    - https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html
+
+
+- Use CV2 line detector (or at least try it. Winning solution in scroll competition uses something similar)
 
 - Efficient UnetPlusPlus: https://github.com/jlcsilva/EfficientUNetPlusPlus
 - SOTA Medical Segmentation Competition Solutions: https://github.com/JunMa11/SOTA-MedSeg
 - How come bigger images worked before? Check broken code and see why.
 
-Different input img sizes works with MIT_B's, EffnetV2's
-- Its because the shapes are aligned in the decoder? How could I do this for maxxvit?
-
 - See why UnetPlusPlus is so slow w/ 384 images
-    - Computation complexity is too high
+    - Computation complexity is too high?
 
 - Automatic contrail tracking paper. https://amt.copernicus.org/articles/3/1089/2010/amt-3-1089-2010.pdf
 
@@ -100,31 +102,29 @@ Segmentation Models Documentation: https://segmentation-modelspytorch.readthedoc
 
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
-CUDA_VISIBLE_DEVICES=0 python main.py --model_name="tu-efficientnetv2_rw_t.ra2_in1k" --fast_dev_run
-CUDA_VISIBLE_DEVICES=0 python main.py --model_name="tu-efficientnetv2_rw_t.ra2_in1k" --fast_dev_run
-CUDA_VISIBLE_DEVICES=2 python main.py --model_name="tu-efficientnetv2_rw_m.agc_in1k" --img_size=512 --lr=1e-4 --batch_size=16 --save_model
-CUDA_VISIBLE_DEVICES=3 python main.py --model_name="mit_b4" --img_size=512 --lr=1e-4 --batch_size=16 --save_model
-CUDA_VISIBLE_DEVICES=2 python main.py --model_name="mit_b5"
+CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
+CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
 
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name="tu-maxxvit_rmlp_tiny_rw_256.sw_in1k"
+CUDA_VISIBLE_DEVICES=3 python main.py --model_name="tu-maxxvit_rmlp_small_rw_256.sw_in1k" --decoder_type="UnetPlusPlus"
+CUDA_VISIBLE_DEVICES=0 python main.py --model_name="tu-coatnet_rmlp_2_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=1e-4 --batch_size=16 --save_preds
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name="tu-maxvit_base_tf_384.in21k_ft_in1k" --img_size=384 --lr=7e-5 --batch_size=12 --save_preds --no_wandb
 
 `['tu-efficientnetv2_rw_t.ra2_in1k','tu-efficientnetv2_rw_s.ra2_in1k','tu-efficientnetv2_rw_m.agc_in1k', 'maxxvit_rmlp_small_rw_256.sw_in1k', "mit_b5", "mit_b4"]`
 
 
-CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/8jbtyog0
-CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/8jbtyog0
-CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/8jbtyog0
-CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/8jbtyog0
+CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/c3tqwif8
+CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/c3tqwif8
+CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/c3tqwif8
+CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/c3tqwif8
 
-brendanartley/Contrails-ICRGW/ccqo954v
+brendanartley/Contrails-ICRGW/ccqo954
 
-#### KFold on All Training
-CUDA_VISIBLE_DEVICES=3 python main.py --save_weights --save_preds --all_folds --model_type="timm" --model_name="efficientnetv2_rw_t.ra2_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/"
-
-#### Train on all Training Data (MUST HAVE -> --train_all --save_preds --save_weights --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/")
-CUDA_VISIBLE_DEVICES=2 python main.py --save_weights --train_all --model_type="timm" --model_name="efficientnetv2_rw_m.agc_in1k" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/"
+#### Train on all Training Data (Add --save_preds if you dont want to manually run validation after training)
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16 --save_preds
 
 #### Competition Validation
-CUDA_VISIBLE_DEVICES=3 python main.py --comp_val --save_preds --decoder_type="UnetPlusPlus" --model_name="tu-maxvit_rmlp_tiny_rw_256.sw_in1k" --model_weights="/data/bartley/gpu_test/models/segmentation/volcanic-morning-341.pt" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/"
+CUDA_VISIBLE_DEVICES=1 python main.py --img_size=256 --batch_size=16 --model_weights="/data/bartley/gpu_test/models/segmentation/astral-spaceship-387.pt"
 
 #### Check dice threshold (edit model preds dir in code)
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py

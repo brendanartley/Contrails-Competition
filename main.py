@@ -20,6 +20,7 @@ config = SimpleNamespace(
     torch_cache = DATA_DIR + "bartley/gpu_test/TORCH_CACHE/",
     model_name = "tu-maxvit_rmlp_tiny_rw_256.sw_in1k",
     model_weights = None, # Used for validation run
+    save_model=True,
     decoder_type = "Unet",
     img_size = 256,
     rand_scale_min = 0.95,
@@ -27,10 +28,11 @@ config = SimpleNamespace(
     batch_size = 32,
     epochs = 10,
     lr = 2e-4,
-    lr_min = 2e-4,
+    lr_min = 1e-5,
     num_cycles = 5,
     scheduler = "CosineAnnealingLR",
     interpolate = "nearest",
+    dup_threshold = 7,
     # -- Trainer Config --
     accelerator = "gpu",
     fast_dev_run = False,
@@ -53,7 +55,6 @@ def parse_args():
     parser.add_argument("--decoder_type", type=str, default=config.decoder_type, help="Model type (seg/timm).")
     parser.add_argument("--model_weights", type=str, default=config.model_weights, help="Model weights file location (used for validation run).")
     parser.add_argument("--data_dir", type=str, default=config.data_dir, help="Data directory path.")
-    parser.add_argument('--save_model', action='store_true', help='Indicator wether to save model weights.')
     parser.add_argument('--fast_dev_run', action='store_true', help='Check PL modules are set up correctly.')
     parser.add_argument('--save_preds', action='store_true', help='Check PL modules are set up correctly.')
     parser.add_argument("--overfit_batches", type=int, default=config.overfit_batches, help="Num of batches to overfit (sanity check).")
@@ -72,6 +73,7 @@ def parse_args():
     parser.add_argument("--num_cycles", type=int, default=config.num_cycles, help="Number of cycles for the cyclical cosine annealing LR.")
     parser.add_argument("--val_check_interval", type=float, default=config.val_check_interval, help="Number of batches between validation checks.")
     parser.add_argument("--num_workers", type=int, default=config.num_workers, help="Number of CPU cores to use.")
+    parser.add_argument("--dup_threshold", type=int, default=config.num_workers, help="The duplicate threshold to test. Lower == more duplicates. (0-5).")
     args = parser.parse_args()
     
     # Update config w/ parameters passed through CLI

@@ -23,7 +23,7 @@ def validate(
     # Create directory for saving predictions
     if config.save_preds:
         # Clear dir of previous predictions
-        shutil.rmtree(config.preds_dir + str(experiment_name))
+        os.system("rm -r {}".format(config.preds_dir + str(experiment_name)))
         os.mkdir(config.preds_dir + str(experiment_name))
 
 
@@ -35,6 +35,7 @@ def validate(
         rand_scale_min = config.rand_scale_min,
         rand_scale_prob = config.rand_scale_prob,
         no_transform = config.no_transform,
+        dup_threshold = config.dup_threshold,
         )
 
     module = ContrailsModule(
