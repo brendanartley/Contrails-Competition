@@ -5,12 +5,12 @@ import torch.optim as optim
 import torchmetrics
 import torchinfo
 from torchvision import transforms
+import os
 # import bitsandbytes as bnb
 
 import cv2
 import albumentations as A
 
-import timm
 from timm.scheduler.cosine_lr import CosineLRScheduler
 
 import pandas as pd
@@ -20,9 +20,6 @@ import segmentation_models_pytorch as smp
 # Models
 from .models.my_models import Unet, UnetPlusPlus
 from .models.timm_unet import CustomUnet
-
-# Dice Helper
-from contrails_pl.metrics import LogCoshDiceLoss
 
 class ContrailsDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, img_size, train=True, transform=None):
@@ -161,9 +158,6 @@ class ContrailsModule(pl.LightningModule):
         loss: str,
         smooth: float,
         dice_threshold: float,
-        alpha: float,
-        beta: float,
-        gamma: float,
         mask_downsample: str,
     ):
         super().__init__()
@@ -242,18 +236,6 @@ class ContrailsModule(pl.LightningModule):
                 mode = 'binary',
                 smooth = self.hparams.smooth,
                 )
-        elif self.hparams.loss == "Tversky":
-            return smp.losses.TverskyLoss(
-                mode = "binary",
-                alpha = self.hparams.alpha,
-                beta = self.hparams.beta,
-                gamma = self.hparams.gamma,
-                smooth = self.hparams.smooth,
-            )
-        elif self.hparams.loss == "LogCosh":
-            return LogCoshDiceLoss(smooth = self.hparams.smooth)
-        elif self.hparams.loss == "Dice-LogCosh":
-            return LogCoshDiceLoss(combo=True, smooth = self.hparams.smooth)
         else:
             raise ValueError(f"{self.hparams.loss} is not a recognized loss function.")
     
@@ -325,6 +307,16 @@ class ContrailsModule(pl.LightningModule):
             self.log_dict(self.metrics[f"{stage}_metrics"], prog_bar=True, batch_size=batch_size)
 
     def on_train_epoch_end(self):
+        # Saving model weights
         if self.hparams.fast_dev_run == False and self.hparams.save_model == True:
-            torch.save(self.model.state_dict(), "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.experiment_name))
+            weights_path = "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.experiment_name)
+            torch.save(self.model.state_dict(), weights_path)
+        return
+    
+    def on_train_end(self):
+        # Makes model deserializable w/out PL module
+        if self.hparams.fast_dev_run == False and self.hparams.save_model == True:
+            weights_path = "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.experiment_name)  
+            os.system("CUDA_VISIBLE_DEVICES="" python ./contrails_pl/convert_weights.py --weights_path={} --model_name={} --decoder_type={} --mask_downsample={} --experiment_name={}"
+                    .format(weights_path, self.hparams.model_name, self.hparams.decoder_type, self.hparams.mask_downsample, self.hparams.experiment_name))
         return

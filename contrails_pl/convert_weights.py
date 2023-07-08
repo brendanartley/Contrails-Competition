@@ -2,15 +2,13 @@ import torch
 import torchinfo
 import segmentation_models_pytorch as smp
 from torchvision import transforms
+import argparse
 
 """
 This file takes in saved_weights and reinstantiates them
 w/ an SMP Class.
 
-Note: We define the class in the script to avoid pickling errors.
-
-This is done so that we can use `model = torch.load(PATH)` in
-another env without using pytorch lightning.
+Note: This is done to make to model deserializable w/ out torch lightning modules.
 """
 
 class Unet(smp.Unet):
@@ -49,33 +47,60 @@ class UnetPlusPlus(smp.UnetPlusPlus):
 
         return resized_masks
 
-seg_models = {
-    "Unet": Unet,
-    "UnetPlusPlus": UnetPlusPlus,
-}
+class config:
+    seg_models = {
+        "Unet": Unet,
+        "UnetPlusPlus": UnetPlusPlus,
+    }
 
-transforms_map = {
-    "BILINEAR": transforms.InterpolationMode.BILINEAR,
-    "BICUBIC": transforms.InterpolationMode.BICUBIC,
-    "NEAREST": transforms.InterpolationMode.NEAREST,
-    "NEAREST_EXACT": transforms.InterpolationMode.NEAREST_EXACT,
-}
+    transforms_map = {
+        "BILINEAR": transforms.InterpolationMode.BILINEAR,
+        "BICUBIC": transforms.InterpolationMode.BICUBIC,
+        "NEAREST": transforms.InterpolationMode.NEAREST,
+        "NEAREST_EXACT": transforms.InterpolationMode.NEAREST_EXACT,
+    }
+    weights_path = ""
+    model_name = ""
+    decoder_type = ""
+    mask_downsample = ""
+    experiment_name = ""
 
-def load_and_save(config, experiment_name):
+def parse_args():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--weights_path", type=str, default=config.weights_path, help="Model weights file location (used for validation run).")
+    parser.add_argument("--model_name", type=str, default=config.model_name, help="Encoder model to use for training.")
+    parser.add_argument("--decoder_type", type=str, default=config.decoder_type, help="Model type (seg/timm).")
+    parser.add_argument("--mask_downsample", type=str, default=config.mask_downsample, help="Type of downsample used for the mask (only used if img_size >= 256).")
+    parser.add_argument("--experiment_name", type=str, default=config.experiment_name, help="Experiment name.")
+    args = parser.parse_args()
+    
+    # Update config w/ parameters passed through CLI
+    for key, value in vars(args).items():
+        setattr(config, key, value)
+    return config
+
+def load_and_save(config):
     print("----- Converting to SMP Class -----")
 
-    # Weights path
-    weights_path =  "{}{}.pt".format(config.model_save_dir, experiment_name)
-
-    # Load weights into SMP Class
-    smp_model = seg_models[config.decoder_type](
+    # Create SMP Class
+    smp_model = config.seg_models[config.decoder_type](
             encoder_name = config.model_name,
             in_channels = 3,
             classes = 1,
-            inter_type=transforms_map[config.mask_downsample],
+            inter_type=config.transforms_map[config.mask_downsample],
     )
-    smp_model.load_state_dict(torch.load(weights_path))
 
-    # Save full model (need to do this for timm encoders)
-    torch.save(smp_model, weights_path)
+    # Load weights
+    smp_model.load_state_dict(torch.load(config.weights_path, map_location=torch.device('cpu')))
+
+    # Save full model
+    torch.save(smp_model, config.weights_path)
     print("----- Converted -----")
+
+def main():
+    config = parse_args()
+    load_and_save(config)
+    return
+
+if __name__ == "__main__":
+    main()

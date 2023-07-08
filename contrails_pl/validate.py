@@ -55,9 +55,6 @@ def validate(
         loss = config.loss,
         smooth = config.smooth,
         dice_threshold = config.dice_threshold,
-        alpha = config.alpha,
-        beta = config.beta,
-        gamma = config.gamma,
         mask_downsample = config.mask_downsample,
     )
 

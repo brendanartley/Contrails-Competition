@@ -71,9 +71,6 @@ def train(
         loss = config.loss,
         smooth = config.smooth,
         dice_threshold = config.dice_threshold,
-        alpha = config.alpha,
-        beta = config.beta,
-        gamma = config.gamma,
         mask_downsample = config.mask_downsample,
     )
 
@@ -97,8 +94,4 @@ def train(
     )
     trainer.fit(module, datamodule=data_module)
     trainer.validate(module, datamodule=data_module)
-
-    # Convert weights to SMP class (for easy loading)
-    if config.fast_dev_run == False and config.save_model == True:
-        load_and_save(config, experiment_name)
     return

@@ -32,11 +32,8 @@ config = SimpleNamespace(
     num_cycles = 5,
     scheduler = "CosineAnnealingLR",
     dice_threshold = 0.5,
-    loss = "Tversky",
-    smooth = 0.25,
-    alpha = 0.4,
-    beta = 0.6,
-    gamma = 1.25,
+    loss = "Dice",
+    smooth = 0.20,
     mask_downsample="BILINEAR",
     # -- Trainer Config --
     accelerator = "gpu",
@@ -79,10 +76,7 @@ def parse_args():
     parser.add_argument("--loss", type=str, default=config.loss, help="Loss function to use.")
     parser.add_argument("--smooth", type=float, default=config.smooth, help="Smoothing factor on Dice Loss function.")
     parser.add_argument("--dice_threshold", type=float, default=config.dice_threshold, help="Threshold for the GlobalDiceCoefficient.")
-    parser.add_argument("--alpha", type=float, default=config.alpha, help="alpha for the tversky loss.")
-    parser.add_argument("--beta", type=float, default=config.beta, help="beta for the tversky loss.")
-    parser.add_argument("--gamma", type=float, default=config.gamma, help="Gamma for the tversky loss.")
-    parser.add_argument("--mask_downsample", type=str, default=config.mask_downsample, help="Type of downsample used for the mask (only used if img_size >= 384).")
+    parser.add_argument("--mask_downsample", type=str, default=config.mask_downsample, help="Type of downsample used for the mask (only used if img_size >= 256).")
     args = parser.parse_args()
     
     # Update config w/ parameters passed through CLI

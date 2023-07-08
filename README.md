@@ -6,6 +6,8 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 ### Ideas
 
+Can a better interpolation method for upsampling improve model?
+
 Try HR_NET backbone?
 - tu-hrnet_w64.ms_in1k (big one)
 - tu-hrnet_w48.ms_in1k (medium)
@@ -16,9 +18,8 @@ Winning UNET by Tom in HubMap is deeply supervised?
 
 Look into fracture segmentation research (bones, sidewalks)
 
-Add model checkpoint callback to save best weights.
+Add model checkpoint callback to save best weights. (this will be useful for saving the best weights according to val_loss)
     - https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html
-
 
 - Use CV2 line detector (or at least try it. Winning solution in scroll competition uses something similar)
 - SOTA Medical Segmentation Competition Solutions: https://github.com/JunMa11/SOTA-MedSeg
@@ -42,8 +43,11 @@ EffnetV2_t
 | 384        | 16         | 16-mixed     | 5.5GB   | <- w/ bits and bytes
 
 
-Models to try
-`['tu-efficientnetv2_rw_t.ra2_in1k','tu-efficientnetv2_rw_s.ra2_in1k','tu-efficientnetv2_rw_m.agc_in1k', 'maxxvit_rmlp_small_rw_256.sw_in1k', "mit_b0", "mit_b1", "mit_b2", "mit_b3"]`
+### Attempted
+
+- Efficientnetv2 backbones
+- Losses: Tversky, LogCoshDice
+- Downsampling Interpolation Methods
 
 
 ### EfficientNet Sizes
@@ -80,11 +84,6 @@ Models to try
 
 MAnet uses less GPU memory than Unet++.
 
-### Links
-
-Segmentation Models Documentation: https://segmentation-modelspytorch.readthedocs.io/en/latest/
-
-
 ### Sample Workflow
 
 1. Train Model
@@ -101,35 +100,27 @@ Segmentation Models Documentation: https://segmentation-modelspytorch.readthedoc
 
 ### Commands
 
+os.system("CUDA_VISIBLE_DEVICES python ./contrails_pl/convert_weights.py")
+
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
 CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
 CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
 
+CUDA_VISIBLE_DEVICES=0 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name=mit_b5 --img_size=512 --lr=8e-4 --batch_size=12
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16
+CUDA_VISIBLE_DEVICES=3 python main.py --model_name=tu-maxxvit_rmlp_small_rw_256.sw_in1k --decoder_type="UnetPlusPlus"
+
+
 CUDA_VISIBLE_DEVICES=2 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/happy-water-472.pt" --save_preds
 CUDA_VISIBLE_DEVICES=2 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/playful-dew-471.pt" --save_preds
 
-CUDA_VISIBLE_DEVICES=3 python main.py --loss="LogCosh" --fast_dev_run
-CUDA_VISIBLE_DEVICES=3 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16
-
-CUDA_VISIBLE_DEVICES=2 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/fiery-glitter-479.pt" --save_preds
-
 CUDA_VISIBLE_DEVICES=3 python main.py --fast_dev_run
 
-CUDA_VISIBLE_DEVICES=1 python main.py --model_name="mit_b3" --loss="Dice" --img_size=384 --mask_downsample="BILINEAR" &&
-CUDA_VISIBLE_DEVICES=1 python main.py --model_name="mit_b3" --loss="Dice" --img_size=384 --mask_downsample="BICUBIC" &2
-CUDA_VISIBLE_DEVICES=1 python main.py --model_name="mit_b3" --loss="Dice" --img_size=384 --mask_downsample="NEAREST" &&
-CUDA_VISIBLE_DEVICES=1 python main.py --model_name="mit_b3" --loss="Dice" --img_size=384 --mask_downsample="NEAREST_EXACT"
-
-CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/3vma0wh1
-CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/3vma0wh1
-CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/3vma0wh1
-CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/3vma0wh1
-
-brendanartley/Contrails-ICRGW/ccqo954
 
 #### Train on all Training Data (Add --save_preds if you dont want to manually run validation after training)
-CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16 --save_preds
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b5 --img_size=512 --lr=8e-4 --batch_size=12 --save_preds
 
 
 #### Save preds (if forgot above)
