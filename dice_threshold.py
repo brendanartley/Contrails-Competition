@@ -12,12 +12,13 @@ Finds the best dice threshold for a set of predictions.
 
 config = SimpleNamespace(
     preds_dir = "/data/bartley/gpu_test/preds/",
-    # all_pred_dirs = ["astral-spaceship-387", "olive-dew-339", "olive-gorge-380"],
-    all_pred_dirs = ["olive-gorge-380"],
-    # all_pred_dirs = ["None_0", "None"],
+    # all_pred_dirs = ["lyric-fire-428", "spring-valley-429", "olive-gorge-380"],
+    all_pred_dirs = ["happy-water-472", "playful-dew-471", "olive-gorge-380"],
     ensemble = False,
     device = torch.device("cpu"),
 )
+
+assert len(config.all_pred_dirs) > 2
 
 
 def get_dice_score(model_name, threshold=0.5):
@@ -37,59 +38,56 @@ def get_dice_score(model_name, threshold=0.5):
 
     return metric.compute().item()
 
+def get_best_threshold(model_name):
+    # Iterate over predictions
+    best_dice = 0
+    best_threshold = 0
+
+    # Find general area of best threshold
+    for current_threshold in tqdm(range(-10, 1, 1)):
+        # Get dice score
+        current_dice = get_dice_score(model_name=model_name, threshold=current_threshold)
+
+        # Update if score is better
+        if current_dice > best_dice:
+            best_dice = current_dice
+            best_threshold = current_threshold
+
+    # Iterate over predictions
+    middle = best_threshold
+    best_dice = 0
+    best_threshold = 0
+
+    # Find more specific best threshold
+    for current_threshold in tqdm(np.arange(middle-0.5, middle+0.5, 0.04)):
+        # Get dice score
+        current_dice = get_dice_score(model_name=model_name, threshold=current_threshold)
+
+        # Update if score is better
+        if current_dice > best_dice:
+            best_dice = current_dice
+            best_threshold = current_threshold
+
+    print()
+    print("Model: {}  Best-Thresh: {:.2f} Best-Dice: {:.6f}".format(model_name, best_threshold, best_dice))
+    return best_threshold
+    
+
 def get_best_thresholds():
 
+    # Dict for storing thresholds
     all_thresholds = {k:0 for k in config.all_pred_dirs}
 
     # Iterate over all folders
     for model_name in config.all_pred_dirs:
-        
-        # Iterate over predictions
-        best_dice = 0
-        best_threshold = 0
-
-        # Find general area of best threshold
-        for current_threshold in tqdm(range(-10, 1, 1)):
-            # Get dice score
-            current_dice = get_dice_score(model_name=model_name, threshold=current_threshold)
-
-            # Update if score is better
-            if current_dice > best_dice:
-                best_dice = current_dice
-                best_threshold = current_threshold
-                all_thresholds[model_name] = np.round(best_threshold, 2)
-
-        # Iterate over predictions
-        middle = best_threshold
-        best_dice = 0
-        best_threshold = 0
-
-        # Find more specific best threshold
-        for current_threshold in tqdm(np.arange(middle-0.5, middle+0.5, 0.04)):
-            # Get dice score
-            current_dice = get_dice_score(model_name=model_name, threshold=current_threshold)
-
-            # Update if score is better
-            if current_dice > best_dice:
-                best_dice = current_dice
-                best_threshold = current_threshold
-                all_thresholds[model_name] = np.round(best_threshold, 2)
-            # Get dice score
-            current_dice = get_dice_score(model_name=model_name, threshold=current_threshold)
-
-            # Update if score is better
-            if current_dice > best_dice:
-                best_dice = current_dice
-                best_threshold = current_threshold
-                all_thresholds[model_name] = np.round(best_threshold, 2)
-        
-        print()
-        print("Model: {}  Best-Thresh: {:.2f} Best-Dice: {:.6f}".format(model_name, best_threshold, best_dice))
+        best_threshold = get_best_threshold(model_name=model_name)
+        all_thresholds[model_name] = best_threshold
     
     return all_thresholds
 
 def dice_ensemble(all_thresholds):
 
+    # Log threshold values
     print(all_thresholds)
 
     # Define Metric
@@ -106,38 +104,44 @@ def dice_ensemble(all_thresholds):
             truth = loaded_tensor[1, ...].int()
 
             # Make predictions
-            new_mask = torch.zeros_like(pred)
-            new_mask[pred >= all_thresholds[fold_path]] = 1
-            new_mask[pred < all_thresholds[fold_path]] = 0
+            new_mask = torch.zeros_like(pred, dtype=torch.float32)
+            new_mask[pred >= all_thresholds[fold_path]] = 1.0
+            new_mask[pred < all_thresholds[fold_path]] = 0.0
             new_mask = new_mask.squeeze()
 
             # Add to pred ensemble
             cur_batch.append(new_mask)
 
         # Take the median of all preds
-        cur_batch = torch.stack(cur_batch).int()
+        cur_batch = torch.round(torch.stack(cur_batch).squeeze())
         cur_batch = torch.median(cur_batch, dim=0)[0]
 
         # Update metric
-        metric.update(pred, truth)
+        metric.update(cur_batch, truth)
 
     return metric.compute().item()
 
-
-def parse_args(config):
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--data_dir", type=str, default=config.data_dir, help="Data directory path.")
-    parser.add_argument('--ensemble', action='store_true', help='Process ensemble predictions.')
-    args = parser.parse_args()
+# def parse_args(config):
+#     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+#     parser.add_argument("--data_dir", type=str, default=config.data_dir, help="Data directory path.")
+#     parser.add_argument('--ensemble', action='store_true', help='Process ensemble predictions.')
+#     args = parser.parse_args()
     
-    # Update config w/ parameters passed through CLI
-    for key, value in vars(args).items():
-        setattr(config, key, value)
+#     # Update config w/ parameters passed through CLI
+#     for key, value in vars(args).items():
+#         setattr(config, key, value)
 
-    return config
+#     return config
 
 def main():
-    all_thresholds = get_best_thresholds()
+
+    # # Simple dice scores
+    # for model_name in config.all_pred_dirs:
+    #     print("Model {}, Score: {:.6f}".format(model_name, get_dice_score(model_name, threshold=0.5)))
+
+    # Best Thresholds + Ensemble
+    # all_thresholds = get_best_thresholds()
+    all_thresholds = {'olive-gorge-380': -4.1, 'spring-valley-429': -4.26, 'lyric-fire-428': -5.02, 'happy-water-472': -1.02, 'playful-dew-471': 0.30}
     ensemble_score = dice_ensemble(all_thresholds)
     print("Final: ", ensemble_score)
     return

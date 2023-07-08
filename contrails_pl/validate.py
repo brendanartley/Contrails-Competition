@@ -45,16 +45,20 @@ def validate(
         preds_dir = config.preds_dir,
         decoder_type = config.decoder_type,
         model_weights = config.model_weights,
-        run_name = None,
+        experiment_name = None,
         save_model = config.save_model,
         save_preds = config.save_preds,
         epochs = config.epochs,
         scheduler = config.scheduler,
         fast_dev_run = config.fast_dev_run,
         num_cycles = config.num_cycles,
-        interpolate = config.interpolate,
+        loss = config.loss,
         smooth = config.smooth,
         dice_threshold = config.dice_threshold,
+        alpha = config.alpha,
+        beta = config.beta,
+        gamma = config.gamma,
+        mask_downsample = config.mask_downsample,
     )
 
     # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark

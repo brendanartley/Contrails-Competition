@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchmetrics
 import torchinfo
-import torchvision
+from torchvision import transforms
 # import bitsandbytes as bnb
 
 import cv2
@@ -20,6 +20,9 @@ import segmentation_models_pytorch as smp
 # Models
 from .models.my_models import Unet, UnetPlusPlus
 from .models.timm_unet import CustomUnet
+
+# Dice Helper
+from contrails_pl.metrics import LogCoshDiceLoss
 
 class ContrailsDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, img_size, train=True, transform=None):
@@ -39,6 +42,7 @@ class ContrailsDataset(torch.utils.data.Dataset):
 
     def load_records(self):
 
+        # TESTING
         train_df = pd.read_csv(self.data_dir + "train_df.csv")
         valid_df = pd.read_csv(self.data_dir + "valid_df.csv")
 
@@ -154,11 +158,13 @@ class ContrailsModule(pl.LightningModule):
         fast_dev_run: bool,
         lr_min: float,
         num_cycles: int,
-        interpolate: str,
         loss: str,
         smooth: float,
         dice_threshold: float,
-        tversky_pair: str,
+        alpha: float,
+        beta: float,
+        gamma: float,
+        mask_downsample: str,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -181,10 +187,18 @@ class ContrailsModule(pl.LightningModule):
             
         # Training Run
         elif self.hparams.decoder_type in seg_models.keys():
+            transforms_map = {
+                "BILINEAR": transforms.InterpolationMode.BILINEAR,
+                "BICUBIC": transforms.InterpolationMode.BICUBIC,
+                "NEAREST": transforms.InterpolationMode.NEAREST,
+                "NEAREST_EXACT": transforms.InterpolationMode.NEAREST_EXACT,
+            }
+
             model = seg_models[self.hparams.decoder_type](
                 encoder_name=self.hparams.model_name, 
                 in_channels=3,
                 classes=1,
+                inter_type=transforms_map[self.hparams.mask_downsample],
             )
         else:
             raise ValueError(f"{self.hparams.decoder_type} not recognized.")
@@ -229,13 +243,17 @@ class ContrailsModule(pl.LightningModule):
                 smooth = self.hparams.smooth,
                 )
         elif self.hparams.loss == "Tversky":
-            alpha, beta = [float(x) for x in self.hparams.tversky_pair.split("_")]
-            print(alpha, beta)
             return smp.losses.TverskyLoss(
                 mode = "binary",
-                alpha = alpha,
-                beta = beta,
+                alpha = self.hparams.alpha,
+                beta = self.hparams.beta,
+                gamma = self.hparams.gamma,
+                smooth = self.hparams.smooth,
             )
+        elif self.hparams.loss == "LogCosh":
+            return LogCoshDiceLoss(smooth = self.hparams.smooth)
+        elif self.hparams.loss == "Dice-LogCosh":
+            return LogCoshDiceLoss(combo=True, smooth = self.hparams.smooth)
         else:
             raise ValueError(f"{self.hparams.loss} is not a recognized loss function.")
     
@@ -277,14 +295,14 @@ class ContrailsModule(pl.LightningModule):
             # Save Preds: Dice Threshold, Ensemble, etc
             if self.hparams.save_preds:
                 
-                # Save each pred as its own tensor
+                # Save each pred as its own tensor (as fp1)
                 for i, img_idx in enumerate(fpath):
                     save_preds = torch.stack([
                         y_logits[i, 0, :, :],
                         y[i]
                     ])
 
-                    torch.save(save_preds, "{}{}/{}.pt".format(
+                    torch.save(save_preds.half(), "{}{}/{}.pt".format(
                         self.hparams.preds_dir, 
                         self.hparams.experiment_name,
                         img_idx, 

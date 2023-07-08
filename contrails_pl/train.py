@@ -68,11 +68,13 @@ def train(
         scheduler = config.scheduler,
         fast_dev_run = config.fast_dev_run,
         num_cycles = config.num_cycles,
-        interpolate = config.interpolate,
         loss = config.loss,
         smooth = config.smooth,
         dice_threshold = config.dice_threshold,
-        tversky_pair = config.tversky_pair,
+        alpha = config.alpha,
+        beta = config.beta,
+        gamma = config.gamma,
+        mask_downsample = config.mask_downsample,
     )
 
     # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark

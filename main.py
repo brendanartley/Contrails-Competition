@@ -30,12 +30,14 @@ config = SimpleNamespace(
     lr = 2e-4,
     lr_min = 1e-5,
     num_cycles = 5,
-    loss = "Dice",
     scheduler = "CosineAnnealingLR",
-    interpolate = "nearest",
-    smooth = 0.25,
     dice_threshold = 0.5,
-    tversky_pair = "0.5_0.5",
+    loss = "Tversky",
+    smooth = 0.25,
+    alpha = 0.4,
+    beta = 0.6,
+    gamma = 1.25,
+    mask_downsample="BILINEAR",
     # -- Trainer Config --
     accelerator = "gpu",
     fast_dev_run = False,
@@ -52,7 +54,6 @@ config = SimpleNamespace(
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--scheduler", type=str, default=config.scheduler, help="Learning rate scheduler for the model to use.")
-    parser.add_argument("--interpolate", type=str, default=config.interpolate, help="Interpolation method for the decoder.")
     parser.add_argument("--model_name", type=str, default=config.model_name, help="Encoder model to use for training.")
     parser.add_argument("--decoder_type", type=str, default=config.decoder_type, help="Model type (seg/timm).")
     parser.add_argument("--model_weights", type=str, default=config.model_weights, help="Model weights file location (used for validation run).")
@@ -78,7 +79,10 @@ def parse_args():
     parser.add_argument("--loss", type=str, default=config.loss, help="Loss function to use.")
     parser.add_argument("--smooth", type=float, default=config.smooth, help="Smoothing factor on Dice Loss function.")
     parser.add_argument("--dice_threshold", type=float, default=config.dice_threshold, help="Threshold for the GlobalDiceCoefficient.")
-    parser.add_argument("--tversky_pair", type=str, default=config.tversky_pair, help="alpha_beta pair for tversky loss.")
+    parser.add_argument("--alpha", type=float, default=config.alpha, help="alpha for the tversky loss.")
+    parser.add_argument("--beta", type=float, default=config.beta, help="beta for the tversky loss.")
+    parser.add_argument("--gamma", type=float, default=config.gamma, help="Gamma for the tversky loss.")
+    parser.add_argument("--mask_downsample", type=str, default=config.mask_downsample, help="Type of downsample used for the mask (only used if img_size >= 384).")
     args = parser.parse_args()
     
     # Update config w/ parameters passed through CLI

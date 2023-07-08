@@ -1,10 +1,11 @@
 from torchvision import transforms
 import segmentation_models_pytorch as smp
 
+
 class Unet(smp.Unet):
-    def __init__(self, **kwargs):
+    def __init__(self, inter_type=transforms.InterpolationMode.NEAREST, **kwargs):
         super().__init__(**kwargs)
-        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=transforms.InterpolationMode.NEAREST)])
+        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=inter_type)])
 
     def forward(self, x):
         
@@ -16,12 +17,13 @@ class Unet(smp.Unet):
         
         # Add a resize mask to match label size
         resized_masks = self.resize_transform(masks)
+
         return resized_masks
     
 class UnetPlusPlus(smp.UnetPlusPlus):
-    def __init__(self, **kwargs):
+    def __init__(self, inter_type=transforms.InterpolationMode.NEAREST, **kwargs):
         super().__init__(**kwargs)
-        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=transforms.InterpolationMode.NEAREST)])
+        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=inter_type)])
 
     def forward(self, x):
         
@@ -33,4 +35,5 @@ class UnetPlusPlus(smp.UnetPlusPlus):
         
         # Add a resize mask to match label size
         resized_masks = self.resize_transform(masks)
+
         return resized_masks

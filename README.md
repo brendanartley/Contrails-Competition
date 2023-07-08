@@ -6,22 +6,22 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 ### Ideas
 
-- Might be able to use some stuff here: https://github.com/open-mmlab
+Try HR_NET backbone?
+- tu-hrnet_w64.ms_in1k (big one)
+- tu-hrnet_w48.ms_in1k (medium)
 
-- Try some different loss functions?
-    - https://github.com/shruti-jadon/Semantic-Segmentation-Loss-Functions/blob/master/loss_functions.py
+Winning UNET by Tom in HubMap is deeply supervised?
+- https://www.kaggle.com/competitions/hubmap-kidney-segmentation/discussion/238198
+- Try out his loss functions 
+
+Look into fracture segmentation research (bones, sidewalks)
 
 Add model checkpoint callback to save best weights.
     - https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html
 
 
 - Use CV2 line detector (or at least try it. Winning solution in scroll competition uses something similar)
-
-- Efficient UnetPlusPlus: https://github.com/jlcsilva/EfficientUNetPlusPlus
 - SOTA Medical Segmentation Competition Solutions: https://github.com/JunMa11/SOTA-MedSeg
-
-- See why UnetPlusPlus is so slow w/ 384 images
-    - Computation complexity is too high?
 
 - Automatic contrail tracking paper. https://amt.copernicus.org/articles/3/1089/2010/amt-3-1089-2010.pdf
 
@@ -106,24 +106,36 @@ CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
 CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
 
-CUDA_VISIBLE_DEVICES=0 python main.py --loss="Tversky" --tversky_pair="0.6_0.4"
-CUDA_VISIBLE_DEVICES=1 python main.py --loss="Tversky" --tversky_pair="0.4_0.6"
-CUDA_VISIBLE_DEVICES=1 python main.py --smooth=0.2
-CUDA_VISIBLE_DEVICES=2 python main.py --smooth=0.3
+CUDA_VISIBLE_DEVICES=2 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/happy-water-472.pt" --save_preds
+CUDA_VISIBLE_DEVICES=2 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/playful-dew-471.pt" --save_preds
+
+CUDA_VISIBLE_DEVICES=3 python main.py --loss="LogCosh" --fast_dev_run
 CUDA_VISIBLE_DEVICES=3 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16
 
-CUDA_VISIBLE_DEVICES=2 python main.py --model_name="tu-maxxvit_rmlp_small_rw_256.sw_in1k" --decoder_type="UnetPlusPlus"
-CUDA_VISIBLE_DEVICES=3 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=7e-5 --batch_size=16
+CUDA_VISIBLE_DEVICES=2 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/fiery-glitter-479.pt" --save_preds
 
-CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/qf8h8sb9
-CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/qf8h8sb9
-CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/qf8h8sb9
-CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/qf8h8sb9
+CUDA_VISIBLE_DEVICES=3 python main.py --fast_dev_run
+
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name="mit_b3" --loss="Dice" --img_size=384 --mask_downsample="BILINEAR" &&
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name="mit_b3" --loss="Dice" --img_size=384 --mask_downsample="BICUBIC" &2
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name="mit_b3" --loss="Dice" --img_size=384 --mask_downsample="NEAREST" &&
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name="mit_b3" --loss="Dice" --img_size=384 --mask_downsample="NEAREST_EXACT"
+
+CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/3vma0wh1
+CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/3vma0wh1
+CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/3vma0wh1
+CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/3vma0wh1
 
 brendanartley/Contrails-ICRGW/ccqo954
 
 #### Train on all Training Data (Add --save_preds if you dont want to manually run validation after training)
 CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16 --save_preds
+
+
+#### Save preds (if forgot above)
+CUDA_VISIBLE_DEVICES=0 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/lyric-fire-428.pt" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --save_preds
+
+CUDA_VISIBLE_DEVICES=1 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/spring-valley-429.pt" --model_name="tu-maxxvit_rmlp_small_rw_256.sw_in1k" --decoder_type="UnetPlusPlus" --save_preds
 
 #### Competition Validation
 CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/olive-gorge-380.pt" --img_size=512 --dice_threshold=-4.1

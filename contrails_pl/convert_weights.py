@@ -14,9 +14,9 @@ another env without using pytorch lightning.
 """
 
 class Unet(smp.Unet):
-    def __init__(self, **kwargs):
+    def __init__(self, inter_type=transforms.InterpolationMode.NEAREST, **kwargs):
         super().__init__(**kwargs)
-        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=transforms.InterpolationMode.NEAREST)])
+        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=inter_type)])
 
     def forward(self, x):
         
@@ -28,12 +28,13 @@ class Unet(smp.Unet):
         
         # Add a resize mask to match label size
         resized_masks = self.resize_transform(masks)
+
         return resized_masks
     
 class UnetPlusPlus(smp.UnetPlusPlus):
-    def __init__(self, **kwargs):
+    def __init__(self, inter_type=transforms.InterpolationMode.NEAREST, **kwargs):
         super().__init__(**kwargs)
-        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=transforms.InterpolationMode.NEAREST)])
+        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=inter_type)])
 
     def forward(self, x):
         
@@ -45,11 +46,19 @@ class UnetPlusPlus(smp.UnetPlusPlus):
         
         # Add a resize mask to match label size
         resized_masks = self.resize_transform(masks)
+
         return resized_masks
 
 seg_models = {
     "Unet": Unet,
     "UnetPlusPlus": UnetPlusPlus,
+}
+
+transforms_map = {
+    "BILINEAR": transforms.InterpolationMode.BILINEAR,
+    "BICUBIC": transforms.InterpolationMode.BICUBIC,
+    "NEAREST": transforms.InterpolationMode.NEAREST,
+    "NEAREST_EXACT": transforms.InterpolationMode.NEAREST_EXACT,
 }
 
 def load_and_save(config, experiment_name):
@@ -63,6 +72,7 @@ def load_and_save(config, experiment_name):
             encoder_name = config.model_name,
             in_channels = 3,
             classes = 1,
+            inter_type=transforms_map[config.mask_downsample],
     )
     smp_model.load_state_dict(torch.load(weights_path))
 
