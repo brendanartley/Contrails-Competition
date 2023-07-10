@@ -34,6 +34,7 @@ config = SimpleNamespace(
     dice_threshold = 0.5,
     loss = "Dice",
     smooth = 0.20,
+    pos_weight = 2.0,
     mask_downsample="BILINEAR",
     # -- Trainer Config --
     accelerator = "gpu",
@@ -77,6 +78,7 @@ def parse_args():
     parser.add_argument("--smooth", type=float, default=config.smooth, help="Smoothing factor on Dice Loss function.")
     parser.add_argument("--dice_threshold", type=float, default=config.dice_threshold, help="Threshold for the GlobalDiceCoefficient.")
     parser.add_argument("--mask_downsample", type=str, default=config.mask_downsample, help="Type of downsample used for the mask (only used if img_size >= 256).")
+    parser.add_argument("--pos_weight", type=float, default=config.pos_weight, help="Pos weight to scale the positive class (for BCE only).")
     args = parser.parse_args()
     
     # Update config w/ parameters passed through CLI

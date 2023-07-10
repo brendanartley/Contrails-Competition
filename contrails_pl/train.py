@@ -72,6 +72,7 @@ def train(
         smooth = config.smooth,
         dice_threshold = config.dice_threshold,
         mask_downsample = config.mask_downsample,
+        pos_weight = config.pos_weight,
     )
 
     # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark

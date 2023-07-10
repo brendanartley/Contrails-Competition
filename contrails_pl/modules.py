@@ -18,9 +18,7 @@ import numpy as np
 import segmentation_models_pytorch as smp
 
 # Models
-from .models.double_encoder import CustomUnet
-from .models.my_models import Unet, UnetPlusPlus
-# from .models.timm_unet import CustomUnet
+from .models.my_models import Unet, UnetPlusPlus, MAnet
 
 class ContrailsDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, img_size, train=True, transform=None):
@@ -58,6 +56,16 @@ class ContrailsDataset(torch.utils.data.Dataset):
     	# 4th dimension is the binary mask (label)	
         img = con[..., :-1]	
         mask = con[..., -1]	
+
+        # # TESTING: Randomly loading another mask if not empty?
+        # if mask.max() > 0:
+        #     fpath = str(self.records[np.random.randint(0, len(self.records))])
+        #     con_path = self.data_dir + "contrails/" + fpath + ".npy"
+        #     con = np.load(str(con_path)).astype("float")
+
+        #     # 4th dimension is the binary mask (label)	
+        #     img = con[..., :-1]	
+        #     mask = con[..., -1]	
 
         # RandomResizeCrop
         if self.transform:
@@ -160,6 +168,7 @@ class ContrailsModule(pl.LightningModule):
         smooth: float,
         dice_threshold: float,
         mask_downsample: str,
+        pos_weight: float,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -173,6 +182,7 @@ class ContrailsModule(pl.LightningModule):
         seg_models = {
             "Unet": Unet,
             "UnetPlusPlus": UnetPlusPlus,
+            "MAnet": MAnet,
         }
         # Transformation Options (downsampling)
         transforms_map = {
@@ -200,14 +210,6 @@ class ContrailsModule(pl.LightningModule):
                 in_channels=3,
                 classes=1,
                 inter_type=transforms_map[self.hparams.mask_downsample],
-            )
-        # Experimental: Using multiple frames
-        elif self.hparams.decoder_type == "CustomUnet":
-            model = CustomUnet(
-                encoder_name=self.hparams.model_name, 
-                in_channels=3,
-                classes=1,
-                inter_type=self.hparams.mask_downsample.lower(),
             )
         else:
             raise ValueError(f"{self.hparams.decoder_type} not recognized.")
@@ -251,6 +253,12 @@ class ContrailsModule(pl.LightningModule):
                 mode = 'binary',
                 smooth = self.hparams.smooth,
                 )
+        elif self.hparams.loss == "BCE":
+            return smp.losses.SoftBCEWithLogitsLoss(
+                # mode = 'binary',
+                smooth_factor = self.hparams.smooth,
+                pos_weight = torch.tensor([self.hparams.pos_weight]),
+                )
         else:
             raise ValueError(f"{self.hparams.loss} is not a recognized loss function.")
     
@@ -283,7 +291,12 @@ class ContrailsModule(pl.LightningModule):
     def _shared_step(self, batch, stage, batch_idx):
         x, y, fpath = batch
         y_logits = self(x) # Raw logits
-        loss = self.loss_fn(y_logits, y)
+
+        # BCE loss needs to remove 1 dims
+        if self.hparams.loss == "BCE":
+            loss = self.loss_fn(y_logits.squeeze(), y.squeeze())
+        else:
+            loss = self.loss_fn(y_logits, y)
 
         # Compute Metric
         if stage == "val":
