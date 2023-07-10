@@ -8,15 +8,19 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 Can a better interpolation method for upsampling improve model?
 
-Try HR_NET backbone?
-- tu-hrnet_w64.ms_in1k (big one)
-- tu-hrnet_w48.ms_in1k (medium)
+- Try removing islands w/ less than x pixels
+    - try range between (0-10)
+
+- This is the one. 3D convnets.
+    - https://arxiv.org/pdf/1711.08200.pdf
+    - I have the feature maps, but I need to connect the encoders together. (look into create_model() function to see how to do this..)
+
+Try hausdorff loss?
+- https://github.com/PatRyg99/HausdorffLoss
 
 Winning UNET by Tom in HubMap is deeply supervised?
 - https://www.kaggle.com/competitions/hubmap-kidney-segmentation/discussion/238198
 - Try out his loss functions 
-
-Look into fracture segmentation research (bones, sidewalks)
 
 Add model checkpoint callback to save best weights. (this will be useful for saving the best weights according to val_loss)
     - https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html
@@ -48,6 +52,7 @@ EffnetV2_t
 - Efficientnetv2 backbones
 - Losses: Tversky, LogCoshDice
 - Downsampling Interpolation Methods
+- Removing Islands
 
 
 ### EfficientNet Sizes
@@ -107,17 +112,23 @@ CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
 CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
 
-CUDA_VISIBLE_DEVICES=0 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16
+CUDA_VISIBLE_DEVICES=0 python main.py --fast_dev_run
+CUDA_VISIBLE_DEVICES=1 python main.py --fast_dev_run
+CUDA_VISIBLE_DEVICES=2 python main.py --fast_dev_run --decoder_type="CustomUnet"
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16 --loss="Tversky"
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16 --loss="Tversky"
+
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=16 --seed=2
 CUDA_VISIBLE_DEVICES=1 python main.py --model_name=mit_b5 --img_size=512 --lr=8e-4 --batch_size=12
-CUDA_VISIBLE_DEVICES=2 python main.py --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name=tu-tf_efficientnetv2_xl.in21k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16
+CUDA_VISIBLE_DEVICES=0 python main.py --model_name=tu-tf_efficientnetv2_l.in21k --img_size=512 --lr=1e-4 --batch_size=15 --no_wandb
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name=tu-tf_efficientnetv2_l.in21k --img_size=512 --lr=1e-4 --batch_size=16
 CUDA_VISIBLE_DEVICES=3 python main.py --model_name=tu-maxxvit_rmlp_small_rw_256.sw_in1k --decoder_type="UnetPlusPlus"
 
 
-CUDA_VISIBLE_DEVICES=2 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/happy-water-472.pt" --save_preds
-CUDA_VISIBLE_DEVICES=2 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/playful-dew-471.pt" --save_preds
-
-CUDA_VISIBLE_DEVICES=3 python main.py --fast_dev_run
-
+CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/peachy-dream-519.pt" --save_preds --model_name=mit_b4 --img_size=512
+CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/vibrant-night-521.pt" --save_preds --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384
+CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/zany-dust-522.pt" --save_preds --model_name=tu-maxxvit_rmlp_small_rw_256.sw_in1k --decoder_type="UnetPlusPlus"
 
 #### Train on all Training Data (Add --save_preds if you dont want to manually run validation after training)
 CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b5 --img_size=512 --lr=8e-4 --batch_size=12 --save_preds

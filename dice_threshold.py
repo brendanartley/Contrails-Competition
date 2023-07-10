@@ -12,13 +12,13 @@ Finds the best dice threshold for a set of predictions.
 
 config = SimpleNamespace(
     preds_dir = "/data/bartley/gpu_test/preds/",
-    # all_pred_dirs = ["lyric-fire-428", "spring-valley-429", "olive-gorge-380"],
-    all_pred_dirs = ["happy-water-472", "playful-dew-471", "olive-gorge-380"],
+    all_pred_dirs = ["olive-gorge-380", "peachy-dream-519", "vibrant-night-521"],
+    # all_pred_dirs = ["olive-gorge-380", "olive-gorge-380", "peachy-dream-519", "vibrant-night-521", "zany-dust-522"],
     ensemble = False,
     device = torch.device("cpu"),
 )
 
-assert len(config.all_pred_dirs) > 2
+# assert len(config.all_pred_dirs) > 2
 
 
 def get_dice_score(model_name, threshold=0.5):
@@ -69,10 +69,9 @@ def get_best_threshold(model_name):
             best_threshold = current_threshold
 
     print()
-    print("Model: {}  Best-Thresh: {:.2f} Best-Dice: {:.6f}".format(model_name, best_threshold, best_dice))
+    print("Model: '{}': {:.2f}, # Best-Dice: {:.6f}".format(model_name, best_threshold, best_dice))
     return best_threshold
     
-
 def get_best_thresholds():
 
     # Dict for storing thresholds
@@ -121,18 +120,6 @@ def dice_ensemble(all_thresholds):
 
     return metric.compute().item()
 
-# def parse_args(config):
-#     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-#     parser.add_argument("--data_dir", type=str, default=config.data_dir, help="Data directory path.")
-#     parser.add_argument('--ensemble', action='store_true', help='Process ensemble predictions.')
-#     args = parser.parse_args()
-    
-#     # Update config w/ parameters passed through CLI
-#     for key, value in vars(args).items():
-#         setattr(config, key, value)
-
-#     return config
-
 def main():
 
     # # Simple dice scores
@@ -141,7 +128,12 @@ def main():
 
     # Best Thresholds + Ensemble
     # all_thresholds = get_best_thresholds()
-    all_thresholds = {'olive-gorge-380': -4.1, 'spring-valley-429': -4.26, 'lyric-fire-428': -5.02, 'happy-water-472': -1.02, 'playful-dew-471': 0.30}
+    all_thresholds = {
+        'olive-gorge-380': -4.1, # Best-Dice: 0.652049
+        'peachy-dream-519': -3.94, # Best-Dice: 0.649420
+        'vibrant-night-521': -5.26, # Best-Dice: 0.649538
+        'zany-dust-522': -3.26, # Best-Dice: 0.645343
+    }
     ensemble_score = dice_ensemble(all_thresholds)
     print("Final: ", ensemble_score)
     return

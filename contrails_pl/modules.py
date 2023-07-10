@@ -18,8 +18,9 @@ import numpy as np
 import segmentation_models_pytorch as smp
 
 # Models
+from .models.double_encoder import CustomUnet
 from .models.my_models import Unet, UnetPlusPlus
-from .models.timm_unet import CustomUnet
+# from .models.timm_unet import CustomUnet
 
 class ContrailsDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, img_size, train=True, transform=None):
@@ -172,27 +173,41 @@ class ContrailsModule(pl.LightningModule):
         seg_models = {
             "Unet": Unet,
             "UnetPlusPlus": UnetPlusPlus,
-            "CustomUnet": CustomUnet,
+        }
+        # Transformation Options (downsampling)
+        transforms_map = {
+            "BILINEAR": transforms.InterpolationMode.BILINEAR,
+            "BICUBIC": transforms.InterpolationMode.BICUBIC,
+            "NEAREST": transforms.InterpolationMode.NEAREST,
+            "NEAREST_EXACT": transforms.InterpolationMode.NEAREST_EXACT,
         }
 
         # Validation Run
         if self.hparams.model_weights != None:
-            model = torch.load(self.hparams.model_weights)
-            
-        # Training Run
-        elif self.hparams.decoder_type in seg_models.keys():
-            transforms_map = {
-                "BILINEAR": transforms.InterpolationMode.BILINEAR,
-                "BICUBIC": transforms.InterpolationMode.BICUBIC,
-                "NEAREST": transforms.InterpolationMode.NEAREST,
-                "NEAREST_EXACT": transforms.InterpolationMode.NEAREST_EXACT,
-            }
-
             model = seg_models[self.hparams.decoder_type](
                 encoder_name=self.hparams.model_name, 
                 in_channels=3,
                 classes=1,
                 inter_type=transforms_map[self.hparams.mask_downsample],
+            )
+            tmp_model = torch.load(self.hparams.model_weights)
+            model.load_state_dict(tmp_model.state_dict())
+            
+        # Training Run
+        elif self.hparams.decoder_type in seg_models.keys():
+            model = seg_models[self.hparams.decoder_type](
+                encoder_name=self.hparams.model_name, 
+                in_channels=3,
+                classes=1,
+                inter_type=transforms_map[self.hparams.mask_downsample],
+            )
+        # Experimental: Using multiple frames
+        elif self.hparams.decoder_type == "CustomUnet":
+            model = CustomUnet(
+                encoder_name=self.hparams.model_name, 
+                in_channels=3,
+                classes=1,
+                inter_type=self.hparams.mask_downsample.lower(),
             )
         else:
             raise ValueError(f"{self.hparams.decoder_type} not recognized.")
