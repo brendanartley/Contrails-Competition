@@ -32,7 +32,6 @@ def train(
         overfit_batches = config.overfit_batches,
         no_wandb = config.no_wandb,
         project = config.project,
-        group = None,
     )
 
     # Get run metadata
@@ -50,12 +49,13 @@ def train(
         img_size = config.img_size,
         rand_scale_min = config.rand_scale_min,
         rand_scale_prob = config.rand_scale_prob,
-        no_transform = config.no_transform,
+        transform = config.transform,
         )
 
     module = ContrailsModule(
         lr = config.lr,
         lr_min = config.lr_min,
+        hf_cache = config.hf_cache,
         model_save_dir = config.model_save_dir,
         model_name = config.model_name,
         preds_dir = config.preds_dir,
@@ -72,7 +72,6 @@ def train(
         smooth = config.smooth,
         dice_threshold = config.dice_threshold,
         mask_downsample = config.mask_downsample,
-        pos_weight = config.pos_weight,
     )
 
     # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark

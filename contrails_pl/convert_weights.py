@@ -1,5 +1,6 @@
 import torch
 import torchinfo
+import transformers
 import segmentation_models_pytorch as smp
 from torchvision import transforms
 import argparse
@@ -78,6 +79,7 @@ class config:
         "NEAREST": transforms.InterpolationMode.NEAREST,
         "NEAREST_EXACT": transforms.InterpolationMode.NEAREST_EXACT,
     }
+    hf_cache = "/data/bartley/gpu_test/HF_CACHE/"
     weights_path = ""
     model_name = ""
     decoder_type = ""
@@ -102,18 +104,26 @@ def load_and_save(config):
     print("----- Converting to SMP Class -----")
 
     # Create SMP Class
-    smp_model = config.seg_models[config.decoder_type](
-            encoder_name = config.model_name,
-            in_channels = 3,
-            classes = 1,
-            inter_type=config.transforms_map[config.mask_downsample],
-    )
+    if config.decoder_type in config.seg_models.keys():
+        model = config.seg_models[config.decoder_type](
+                encoder_name = config.model_name,
+                in_channels = 3,
+                classes = 1,
+                inter_type=config.transforms_map[config.mask_downsample],
+        )
+    else:
+        model = transformers.SegformerForSemanticSegmentation.from_pretrained(
+                config.model_name, 
+                num_labels=1, 
+                ignore_mismatched_sizes=True,
+                cache_dir=config.hf_cache,
+                )
 
     # Load weights
-    smp_model.load_state_dict(torch.load(config.weights_path, map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load(config.weights_path, map_location=torch.device('cpu')))
 
     # Save full model
-    torch.save(smp_model, config.weights_path)
+    torch.save(model, config.weights_path)
     print("----- Converted -----")
 
 def main():

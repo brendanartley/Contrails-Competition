@@ -19,6 +19,7 @@ import segmentation_models_pytorch as smp
 
 # Models
 from .models.my_models import Unet, UnetPlusPlus, MAnet
+import transformers
 
 class ContrailsDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, img_size, train=True, transform=None):
@@ -38,9 +39,8 @@ class ContrailsDataset(torch.utils.data.Dataset):
 
     def load_records(self):
 
-        # TESTING
-        train_df = pd.read_csv(self.data_dir + "train_df.csv")
-        valid_df = pd.read_csv(self.data_dir + "valid_df.csv")
+        train_df = pd.read_csv(self.data_dir + "train_df.csv")#.head(1000)
+        valid_df = pd.read_csv(self.data_dir + "valid_df.csv")#.head(1000)
 
         # Train on all data
         if self.trn == True:
@@ -56,16 +56,6 @@ class ContrailsDataset(torch.utils.data.Dataset):
     	# 4th dimension is the binary mask (label)	
         img = con[..., :-1]	
         mask = con[..., -1]	
-
-        # # TESTING: Randomly loading another mask if not empty?
-        # if mask.max() > 0:
-        #     fpath = str(self.records[np.random.randint(0, len(self.records))])
-        #     con_path = self.data_dir + "contrails/" + fpath + ".npy"
-        #     con = np.load(str(con_path)).astype("float")
-
-        #     # 4th dimension is the binary mask (label)	
-        #     img = con[..., :-1]	
-        #     mask = con[..., -1]	
 
         # RandomResizeCrop
         if self.transform:
@@ -94,23 +84,21 @@ class ContrailsDataModule(pl.LightningDataModule):
         img_size: int,
         rand_scale_min: float,
         rand_scale_prob: float,
-        no_transform: bool,
+        transform: bool,
     ):
         super().__init__()
         self.save_hyperparameters()
         self.train_transform, self.val_transform = self._init_transforms()
     
     def _init_transforms(self):
-        # No transforms: (except reshape)
-        if self.hparams.no_transform == True:
-            train_transforms = None
-            valid_transforms = None
-            
-        # w/ Transformations
-        else:
+        if self.hparams.transform == True:
             train_transforms = A.Compose([
                 A.RandomSizedCrop(min_max_height=(int(256*self.hparams.rand_scale_min), 256), height=256, width=256, p=self.hparams.rand_scale_prob),
             ])
+            valid_transforms = None
+            
+        else:
+            train_transforms = None
             valid_transforms = None
 
         return train_transforms, valid_transforms
@@ -151,6 +139,8 @@ class ContrailsModule(pl.LightningModule):
     def __init__(
         self,
         lr: float,
+        lr_min: float,
+        hf_cache: str,
         model_save_dir: str,
         model_name: str,
         preds_dir: str,
@@ -162,23 +152,22 @@ class ContrailsModule(pl.LightningModule):
         epochs: int,
         scheduler: str,
         fast_dev_run: bool,
-        lr_min: float,
         num_cycles: int,
         loss: str,
         smooth: float,
         dice_threshold: float,
         mask_downsample: str,
-        pos_weight: float,
     ):
         super().__init__()
         self.save_hyperparameters()
         self.model = self._init_model()
         self.metrics = self._init_metrics()
         self.loss_fn = self._init_loss_fn()
+        self.val_dice_best = 0
 
     def _init_model(self):
 
-        # Decoder Options
+        # SMP Decoder Options
         seg_models = {
             "Unet": Unet,
             "UnetPlusPlus": UnetPlusPlus,
@@ -192,7 +181,7 @@ class ContrailsModule(pl.LightningModule):
             "NEAREST_EXACT": transforms.InterpolationMode.NEAREST_EXACT,
         }
 
-        # Validation Run
+        # Validation Runs
         if self.hparams.model_weights != None:
             model = seg_models[self.hparams.decoder_type](
                 encoder_name=self.hparams.model_name, 
@@ -203,7 +192,7 @@ class ContrailsModule(pl.LightningModule):
             tmp_model = torch.load(self.hparams.model_weights)
             model.load_state_dict(tmp_model.state_dict())
             
-        # Training Run
+        # Training Runs
         elif self.hparams.decoder_type in seg_models.keys():
             model = seg_models[self.hparams.decoder_type](
                 encoder_name=self.hparams.model_name, 
@@ -211,6 +200,14 @@ class ContrailsModule(pl.LightningModule):
                 classes=1,
                 inter_type=transforms_map[self.hparams.mask_downsample],
             )
+        elif self.hparams.decoder_type == "hf":
+            # SEGFORMER
+            model = transformers.SegformerForSemanticSegmentation.from_pretrained(
+                self.hparams.model_name, 
+                num_labels=1, 
+                ignore_mismatched_sizes=True,
+                cache_dir=self.hparams.hf_cache,
+                )
         else:
             raise ValueError(f"{self.hparams.decoder_type} not recognized.")
         
@@ -253,12 +250,6 @@ class ContrailsModule(pl.LightningModule):
                 mode = 'binary',
                 smooth = self.hparams.smooth,
                 )
-        elif self.hparams.loss == "BCE":
-            return smp.losses.SoftBCEWithLogitsLoss(
-                # mode = 'binary',
-                smooth_factor = self.hparams.smooth,
-                pos_weight = torch.tensor([self.hparams.pos_weight]),
-                )
         else:
             raise ValueError(f"{self.hparams.loss} is not a recognized loss function.")
     
@@ -290,13 +281,14 @@ class ContrailsModule(pl.LightningModule):
     
     def _shared_step(self, batch, stage, batch_idx):
         x, y, fpath = batch
-        y_logits = self(x) # Raw logits
+        y_logits = self(x)
 
-        # BCE loss needs to remove 1 dims
-        if self.hparams.loss == "BCE":
-            loss = self.loss_fn(y_logits.squeeze(), y.squeeze())
-        else:
-            loss = self.loss_fn(y_logits, y)
+        # For huggingface models
+        if self.hparams.decoder_type == "hf":
+            y_logits = y_logits.logits
+            y_logits = torch.nn.functional.interpolate(y_logits, size=256, mode="bilinear", align_corners=False)
+
+        loss = self.loss_fn(y_logits, y)
 
         # Compute Metric
         if stage == "val":
@@ -334,12 +326,20 @@ class ContrailsModule(pl.LightningModule):
         if stage == "val":
             self.log_dict(self.metrics[f"{stage}_metrics"], prog_bar=True, batch_size=batch_size)
 
-    def on_train_epoch_end(self):
+    def _save_weights(self, val_dice):
         # Saving model weights
         if self.hparams.fast_dev_run == False and self.hparams.save_model == True:
             weights_path = "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.experiment_name)
             torch.save(self.model.state_dict(), weights_path)
+            print("\nSaved weights. val_dice: {:.4f}".format(val_dice))
         return
+
+    # def on_train_epoch_end(self):
+    #     # Saving model weights
+    #     if self.hparams.fast_dev_run == False and self.hparams.save_model == True:
+    #         weights_path = "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.experiment_name)
+    #         torch.save(self.model.state_dict(), weights_path)
+    #     return
     
     def on_train_end(self):
         # Makes model deserializable w/out PL module

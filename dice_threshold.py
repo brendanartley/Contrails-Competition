@@ -12,8 +12,9 @@ Finds the best dice threshold for a set of predictions.
 
 config = SimpleNamespace(
     preds_dir = "/data/bartley/gpu_test/preds/",
-    all_pred_dirs = ["olive-gorge-380", "peachy-dream-519", "vibrant-night-521"],
-    # all_pred_dirs = ["olive-gorge-380", "olive-gorge-380", "peachy-dream-519", "vibrant-night-521", "zany-dust-522"],
+    # all_pred_dirs = ["olive-gorge-380", "peachy-dream-519", "vibrant-night-521"],
+    # all_pred_dirs = ["proud-dawn-536", "olive-gorge-380", "peachy-dream-519"],
+    all_pred_dirs = ["olive-gorge-380", "proud-dawn-536", "zany-dust-522", "peachy-dream-519", "vibrant-night-521"],
     ensemble = False,
     device = torch.device("cpu"),
 )
@@ -72,17 +73,23 @@ def get_best_threshold(model_name):
     print("Model: '{}': {:.2f}, # Best-Dice: {:.6f}".format(model_name, best_threshold, best_dice))
     return best_threshold
     
-def get_best_thresholds():
+def get_best_thresholds(all_thresholds):
 
-    # Dict for storing thresholds
-    all_thresholds = {k:0 for k in config.all_pred_dirs}
+    # Only return selected models
+    res = {}
 
     # Iterate over all folders
     for model_name in config.all_pred_dirs:
+
+        # Break if already computed
+        if model_name in all_thresholds:
+            res[model_name] = all_thresholds[model_name]
+            continue
+
         best_threshold = get_best_threshold(model_name=model_name)
-        all_thresholds[model_name] = best_threshold
+        res[model_name] = best_threshold
     
-    return all_thresholds
+    return res
 
 def dice_ensemble(all_thresholds):
 
@@ -126,14 +133,17 @@ def main():
     # for model_name in config.all_pred_dirs:
     #     print("Model {}, Score: {:.6f}".format(model_name, get_dice_score(model_name, threshold=0.5)))
 
-    # Best Thresholds + Ensemble
-    # all_thresholds = get_best_thresholds()
+    # Known Thresholds
     all_thresholds = {
         'olive-gorge-380': -4.1, # Best-Dice: 0.652049
         'peachy-dream-519': -3.94, # Best-Dice: 0.649420
         'vibrant-night-521': -5.26, # Best-Dice: 0.649538
+        'proud-dawn-536': -4.62, # Best-Dice: 0.646654
         'zany-dust-522': -3.26, # Best-Dice: 0.645343
     }
+
+    #Best Thresholds + Ensemble
+    # all_thresholds = get_best_thresholds(all_thresholds)
     ensemble_score = dice_ensemble(all_thresholds)
     print("Final: ", ensemble_score)
     return

@@ -1,4 +1,5 @@
 import lightning.pytorch as pl
+import torch
 
 def load_logger_and_callbacks(
     fast_dev_run,
@@ -6,7 +7,6 @@ def load_logger_and_callbacks(
     overfit_batches,
     no_wandb,
     project,
-    group,
 ):
     """
     Function that loads logger and callbacks.
@@ -22,12 +22,14 @@ def load_logger_and_callbacks(
         logger, id_ = get_logger(
             metrics = metrics, 
             project = project,
-            group = group,
             )
-        callbacks = get_callbacks()
+        callbacks = [
+            pl.callbacks.LearningRateMonitor(),
+            CustomWeightSaver(),
+        ]
     return logger, callbacks
 
-def get_logger(metrics, project, group):
+def get_logger(metrics, project):
     """
     Function to load logger.
     
@@ -38,7 +40,6 @@ def get_logger(metrics, project, group):
     logger = pl.loggers.WandbLogger(
         project = project, 
         save_dir = None,
-        group = group,
         )
     id_ = logger.experiment.id
     
@@ -48,8 +49,22 @@ def get_logger(metrics, project, group):
     
     return logger, id_
 
-def get_callbacks():
-    callbacks = [
-        pl.callbacks.LearningRateMonitor(),
-    ]
-    return callbacks
+class CustomWeightSaver(pl.Callback):
+  """
+  Saves model weights if best val_score so far.
+  """
+  def __init__(self):
+    super().__init__()
+    self.best_val_dice = 0
+
+  def on_validation_epoch_end(self, trainer, module):
+    if module.hparams.fast_dev_run == False and module.hparams.save_model == True:
+
+        # Update best val dice
+        val_dice = trainer.logged_metrics["val_dice"].item()
+        if val_dice > self.best_val_dice:
+            self.best_val_dice = val_dice
+
+            # Save weights
+            module._save_weights(val_dice)
+    return

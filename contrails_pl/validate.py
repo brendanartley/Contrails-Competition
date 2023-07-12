@@ -18,7 +18,7 @@ def validate(
         config.num_workers = 1
 
     # Get run metadata
-    experiment_name =  None
+    experiment_name =  config.model_weights.split("/")[-1][:-3]
 
     # Create directory for saving predictions
     if config.save_preds:
@@ -34,12 +34,13 @@ def validate(
         img_size = config.img_size,
         rand_scale_min = config.rand_scale_min,
         rand_scale_prob = config.rand_scale_prob,
-        no_transform = config.no_transform,
+        transform = config.transform,
         )
 
     module = ContrailsModule(
         lr = config.lr,
         lr_min = config.lr_min,
+        hf_cache = config.hf_cache,
         model_save_dir = config.model_save_dir,
         model_name = config.model_name,
         preds_dir = config.preds_dir,

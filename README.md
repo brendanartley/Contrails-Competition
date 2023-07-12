@@ -11,13 +11,6 @@ Can a better interpolation method for upsampling improve model?
 - Try MSNet? Will have to edit, but could be useful
     - https://github.com/taochx/MSNet/blob/main/msnet.py
 
-- Netflix ensemble method?
-    - https://kaggler.readthedocs.io/en/latest/_modules/kaggler/ensemble/linear.html#netflix
-
-- This is the one. 3D convnets.
-    - https://arxiv.org/pdf/1711.08200.pdf
-    - I have the feature maps, but I need to connect the encoders together. (look into create_model() function to see how to do this..)
-
 Add model checkpoint callback to save best weights. (this will be useful for saving the best weights according to val_loss)
     - https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html
 
@@ -34,7 +27,12 @@ Add model checkpoint callback to save best weights. (this will be useful for sav
 
 conda activate /data/bartley/gpu_test/openmmlab
 
-### Models
+Downloading a config + checkpoint
+```
+mim download mmsegmentation --config pspnet_r50-d8_4xb2-40k_cityscapes-512x1024 --dest .
+```
+
+### GPU Efficiency Notes
 
 EffnetV2_t
 | Resolution | Batch Size | Precision    | GPU     |
@@ -49,45 +47,11 @@ EffnetV2_t
 
 ### Attempted
 
-- Efficientnetv2 backbones
+- Efficientnetv2, DPT
 - Losses: Tversky, LogCoshDice
 - Downsampling Interpolation Methods
 - Removing Islands
-
-
-### EfficientNet Sizes
-
-| Model                | Img Size | Params |
-|----------------------|----------|--------|
-| EfficientNetB0       | 224      | 4M     |
-| EfficientNetB1       | 240      | 6M     |
-| EfficientNetB2       | 260      | 7M     |
-| EfficientNetB3       | 300      | 10M    |
-| EfficientNetB4       | 380      | 17M    |
-| EfficientNetB5       | 456      | 28M    |
-| EfficientNetB6       | 528      | 40M    |
-| EfficientNetB7       | 600      | 63M    |
-| efficientnetv2_rw_t  | -        | 13M    |
-| efficientnetv2_rw_s  | -        | 23M    |
-| efficientnetv2_rw_m  | -        | 53M    |
-| efficientnetv2_s     | -        | 23M    |
-| efficientnetv2_m     | -        | 53M    |
-| mit_b1               | -        | 13M    |
-| mit_b2               | -        | 24M    |
-| mit_b3               | -        | 44M    |
-| mit_b4               | -        | 60M    |
-| mit_b5               | -        | 81M    |
-
-### Decoder Sizes
-
-| Type       | Params
----------------------------
-| Unet         | 31.8 M
-| UnetPlusPlus | 33.4 M
-| MAnet        | 39.1 M
-| FPN          | 30.5 M
-
-MAnet uses less GPU memory than Unet++.
+- Openmmlab (upernet, swin)
 
 ### Sample Workflow
 
@@ -109,15 +73,17 @@ os.system("CUDA_VISIBLE_DEVICES python ./contrails_pl/convert_weights.py")
 
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
-CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
-CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/eyzk70zy
+CUDA_VISIBLE_DEVICES=1 python main.py --no_transform --val_check_interval=0.10
+CUDA_VISIBLE_DEVICES=2 python main.py --val_check_interval=0.10
 
-CUDA_VISIBLE_DEVICES=2 python main.py --fast_dev_run
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10
+CUDA_VISIBLE_DEVICES=3 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name="nvidia/segformer-b3-finetuned-ade-512-512" --decoder_type="hf" --img_size=512 --lr=1e-4 --batch_size=16 --val_check_interval=0.10 --no_wandb
 
-CUDA_VISIBLE_DEVICES=3 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --decoder_type="MAnet"
 
+CUDA_VISIBLE_DEVICES=3 python main.py --decoder_type="Upernet" --model_name="openmmlab/upernet-convnext-tiny" --val_check_interval=0.10
 
-CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/peachy-dream-519.pt" --save_preds --model_name=mit_b4 --img_size=512
+CUDA_VISIBLE_DEVICES=1 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/expert-donkey-570.pt" --save_preds
 CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/vibrant-night-521.pt" --save_preds --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384
 CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/zany-dust-522.pt" --save_preds --model_name=tu-maxxvit_rmlp_small_rw_256.sw_in1k --decoder_type="UnetPlusPlus"
 

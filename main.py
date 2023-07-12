@@ -3,7 +3,7 @@ from contrails_pl.validate import validate
 
 import argparse
 from types import SimpleNamespace
-import json
+import json, os
 
 # Load environment variables (stored in config.json file)
 with open('./config.json') as f:
@@ -13,11 +13,11 @@ DATA_DIR = data["DATA_DIR"]
 # default configuration parameters
 config = SimpleNamespace(
     project = "Contrails-ICRGW",
-    data_dir = DATA_DIR + "/bartley/gpu_test/contrails-images-ash-color/",    
-    # data_dir = DATA_DIR + "/bartley/gpu_test/my-contrails-data/",
-    model_save_dir = DATA_DIR + "bartley/gpu_test/models/segmentation/",
-    preds_dir = DATA_DIR + "bartley/gpu_test/preds/",
-    torch_cache = DATA_DIR + "bartley/gpu_test/TORCH_CACHE/",
+    hf_cache = os.path.join(DATA_DIR, "bartley/gpu_test/HF_CACHE/"),
+    torch_cache = os.path.join(DATA_DIR, "bartley/gpu_test/TORCH_CACHE/"),
+    data_dir = os.path.join(DATA_DIR, "bartley/gpu_test/contrails-images-ash-color/"),
+    model_save_dir = os.path.join(DATA_DIR, "bartley/gpu_test/models/segmentation/"),
+    preds_dir = os.path.join(DATA_DIR, "bartley/gpu_test/preds/"),
     model_name = "tu-maxvit_rmlp_tiny_rw_256.sw_in1k",
     model_weights = None, # Used for validation run
     save_model=True,
@@ -26,7 +26,7 @@ config = SimpleNamespace(
     rand_scale_min = 0.95,
     rand_scale_prob = 0.5,
     batch_size = 32,
-    epochs = 10,
+    epochs = 11,
     lr = 2e-4,
     lr_min = 1e-5,
     num_cycles = 5,
@@ -34,7 +34,6 @@ config = SimpleNamespace(
     dice_threshold = 0.5,
     loss = "Dice",
     smooth = 0.20,
-    pos_weight = 2.0,
     mask_downsample="BILINEAR",
     # -- Trainer Config --
     accelerator = "gpu",
@@ -60,7 +59,7 @@ def parse_args():
     parser.add_argument('--save_preds', action='store_true', help='Check PL modules are set up correctly.')
     parser.add_argument("--overfit_batches", type=int, default=config.overfit_batches, help="Num of batches to overfit (sanity check).")
     parser.add_argument('--no_wandb', action='store_true', help='Wether to log with weights and biases.')
-    parser.add_argument('--no_transform', action='store_true', help='Wether to apply transformations to training data.')
+    parser.add_argument('--transform', action='store_false', help='Wether to apply transformations to training data.')
     parser.add_argument("--seed", type=int, default=config.seed, help="Seed for reproducability.")
     parser.add_argument("--precision", type=str, default=config.precision, help="Precision to use (AMP).")
     parser.add_argument("--img_size", type=int, default=config.img_size, help="Interpolates to an image size (orig = 256x256).")
@@ -78,7 +77,6 @@ def parse_args():
     parser.add_argument("--smooth", type=float, default=config.smooth, help="Smoothing factor on Dice Loss function.")
     parser.add_argument("--dice_threshold", type=float, default=config.dice_threshold, help="Threshold for the GlobalDiceCoefficient.")
     parser.add_argument("--mask_downsample", type=str, default=config.mask_downsample, help="Type of downsample used for the mask (only used if img_size >= 256).")
-    parser.add_argument("--pos_weight", type=float, default=config.pos_weight, help="Pos weight to scale the positive class (for BCE only).")
     args = parser.parse_args()
     
     # Update config w/ parameters passed through CLI
@@ -98,44 +96,62 @@ def main(config):
     pass
 
 # (START) THIS IS NEED TO LOAD MODELS FOR VALIDATION..
-# from torchvision import transforms
-# import segmentation_models_pytorch as smp
+from torchvision import transforms
+import segmentation_models_pytorch as smp
 
-# class Unet(smp.Unet):
-#     def __init__(self, inter_type=transforms.InterpolationMode.NEAREST, **kwargs):
-#         super().__init__(**kwargs)
-#         self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=inter_type)])
+class Unet(smp.Unet):
+    def __init__(self, inter_type=transforms.InterpolationMode.NEAREST, **kwargs):
+        super().__init__(**kwargs)
+        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=inter_type)])
 
-#     def forward(self, x):
+    def forward(self, x):
         
-#         # Original forward function
-#         self.check_input_shape(x)
-#         features = self.encoder(x)
-#         decoder_output = self.decoder(*features)
-#         masks = self.segmentation_head(decoder_output)
+        # Original forward function
+        self.check_input_shape(x)
+        features = self.encoder(x)
+        decoder_output = self.decoder(*features)
+        masks = self.segmentation_head(decoder_output)
         
-#         # Add a resize mask to match label size
-#         resized_masks = self.resize_transform(masks)
+        # Add a resize mask to match label size
+        resized_masks = self.resize_transform(masks)
 
-#         return resized_masks
+        return resized_masks
     
-# class UnetPlusPlus(smp.UnetPlusPlus):
-#     def __init__(self, inter_type=transforms.InterpolationMode.NEAREST, **kwargs):
-#         super().__init__(**kwargs)
-#         self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=inter_type)])
+class UnetPlusPlus(smp.UnetPlusPlus):
+    def __init__(self, inter_type=transforms.InterpolationMode.NEAREST, **kwargs):
+        super().__init__(**kwargs)
+        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=inter_type)])
 
-#     def forward(self, x):
+    def forward(self, x):
         
-#         # Original forward function
-#         self.check_input_shape(x)
-#         features = self.encoder(x)
-#         decoder_output = self.decoder(*features)
-#         masks = self.segmentation_head(decoder_output)
+        # Original forward function
+        self.check_input_shape(x)
+        features = self.encoder(x)
+        decoder_output = self.decoder(*features)
+        masks = self.segmentation_head(decoder_output)
         
-#         # Add a resize mask to match label size
-#         resized_masks = self.resize_transform(masks)
+        # Add a resize mask to match label size
+        resized_masks = self.resize_transform(masks)
 
-#         return resized_masks
+        return resized_masks
+
+class MAnet(smp.MAnet):
+    def __init__(self, inter_type=transforms.InterpolationMode.NEAREST, **kwargs):
+        super().__init__(**kwargs)
+        self.resize_transform = transforms.Compose([transforms.Resize(256, antialias=True, interpolation=inter_type)])
+
+    def forward(self, x):
+        
+        # Original forward function
+        self.check_input_shape(x)
+        features = self.encoder(x)
+        decoder_output = self.decoder(*features)
+        masks = self.segmentation_head(decoder_output)
+        
+        # Add a resize mask to match label size
+        resized_masks = self.resize_transform(masks)
+
+        return resized_masks
 
 # (END) THIS IS NEED TO LOAD MODELS FOR VALIDATION..
 
