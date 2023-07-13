@@ -35,6 +35,7 @@ def validate(
         rand_scale_min = config.rand_scale_min,
         rand_scale_prob = config.rand_scale_prob,
         transform = config.transform,
+        seed = config.seed,
         )
 
     module = ContrailsModule(
@@ -46,7 +47,7 @@ def validate(
         preds_dir = config.preds_dir,
         decoder_type = config.decoder_type,
         model_weights = config.model_weights,
-        experiment_name = None,
+        experiment_name = experiment_name,
         save_model = config.save_model,
         save_preds = config.save_preds,
         epochs = config.epochs,

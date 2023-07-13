@@ -28,6 +28,7 @@ def train(
             "val_loss": "min", 
             "train_loss": "min",
             "val_dice": "last",
+            "val_dice": "max",
             },
         overfit_batches = config.overfit_batches,
         no_wandb = config.no_wandb,
@@ -50,6 +51,7 @@ def train(
         rand_scale_min = config.rand_scale_min,
         rand_scale_prob = config.rand_scale_prob,
         transform = config.transform,
+        seed = config.seed,
         )
 
     module = ContrailsModule(

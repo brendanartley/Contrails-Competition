@@ -111,13 +111,6 @@ def load_and_save(config):
                 classes = 1,
                 inter_type=config.transforms_map[config.mask_downsample],
         )
-    else:
-        model = transformers.SegformerForSemanticSegmentation.from_pretrained(
-                config.model_name, 
-                num_labels=1, 
-                ignore_mismatched_sizes=True,
-                cache_dir=config.hf_cache,
-                )
 
     # Load weights
     model.load_state_dict(torch.load(config.weights_path, map_location=torch.device('cpu')))

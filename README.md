@@ -6,31 +6,19 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 ### Ideas
 
-Can a better interpolation method for upsampling improve model?
+- Train larger model on Sunny
+- Make UnetExtension
+    - https://github.com/frgfm/Holocron
 
-- Try MSNet? Will have to edit, but could be useful
-    - https://github.com/taochx/MSNet/blob/main/msnet.py
-
-Add model checkpoint callback to save best weights. (this will be useful for saving the best weights according to val_loss)
-    - https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html
+- Stage 2. Use frozen backbone to combine three prediction maps
 
 - Use CV2 line detector (or at least try it. Winning solution in scroll competition uses something similar)
 - SOTA Medical Segmentation Competition Solutions: https://github.com/JunMa11/SOTA-MedSeg
-
 - Automatic contrail tracking paper. https://amt.copernicus.org/articles/3/1089/2010/amt-3-1089-2010.pdf
 
 ### Preprint Notes / Findings
 
 - Best per-pixel threshold is 0.4 (optimize this by writing prediction to disk and comparing score across thresholds)
-
-### OpenMMLab Notes
-
-conda activate /data/bartley/gpu_test/openmmlab
-
-Downloading a config + checkpoint
-```
-mim download mmsegmentation --config pspnet_r50-d8_4xb2-40k_cityscapes-512x1024 --dest .
-```
 
 ### GPU Efficiency Notes
 
@@ -69,30 +57,28 @@ EffnetV2_t
 
 ### Commands
 
-os.system("CUDA_VISIBLE_DEVICES python ./contrails_pl/convert_weights.py")
-
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
-CUDA_VISIBLE_DEVICES=1 python main.py --no_transform --val_check_interval=0.10
-CUDA_VISIBLE_DEVICES=2 python main.py --val_check_interval=0.10
+CUDA_VISIBLE_DEVICES=2 python main.py --lr=3e-4 --lr_min=1e-7 --scheduler="CosineAnnealingLRCyclic" --val_check_interval=0.10 --num_cycles=10
+CUDA_VISIBLE_DEVICES=3 python main.py --lr=5e-4 --lr_min=1e-7 --scheduler="CosineAnnealingLRCyclic" --val_check_interval=0.10
+
+
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16 --val_check_interval=0.10 --seed=1
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16 --val_check_interval=0.10 --seed=2
+CUDA_VISIBLE_DEVICES=3 python main.py --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16 --val_check_interval=0.10 --seed=3
 
 CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10
 CUDA_VISIBLE_DEVICES=3 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10
-CUDA_VISIBLE_DEVICES=2 python main.py --model_name="nvidia/segformer-b3-finetuned-ade-512-512" --decoder_type="hf" --img_size=512 --lr=1e-4 --batch_size=16 --val_check_interval=0.10 --no_wandb
 
-
-CUDA_VISIBLE_DEVICES=3 python main.py --decoder_type="Upernet" --model_name="openmmlab/upernet-convnext-tiny" --val_check_interval=0.10
-
-CUDA_VISIBLE_DEVICES=1 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/expert-donkey-570.pt" --save_preds
-CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/vibrant-night-521.pt" --save_preds --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384
-CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/zany-dust-522.pt" --save_preds --model_name=tu-maxxvit_rmlp_small_rw_256.sw_in1k --decoder_type="UnetPlusPlus"
+CUDA_VISIBLE_DEVICES=3 python main.py --model_name=mit_b4 --img_size=512 --model_weights="/data/bartley/gpu_test/models/segmentation/electric-haze-579.pt" --save_preds
+CUDA_VISIBLE_DEVICES=1 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/pretty-microwave-583.pt" --save_preds --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384
 
 #### Train on all Training Data (Add --save_preds if you dont want to manually run validation after training)
 CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b5 --img_size=512 --lr=8e-4 --batch_size=12 --save_preds
 
 
 #### Save preds (if forgot above)
-CUDA_VISIBLE_DEVICES=0 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/lyric-fire-428.pt" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --save_preds
+CUDA_VISIBLE_DEVICES=0 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/electric-haze-579.pt" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --save_preds
 
 CUDA_VISIBLE_DEVICES=1 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/spring-valley-429.pt" --model_name="tu-maxxvit_rmlp_small_rw_256.sw_in1k" --decoder_type="UnetPlusPlus" --save_preds
 

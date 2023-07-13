@@ -14,9 +14,10 @@ config = SimpleNamespace(
     preds_dir = "/data/bartley/gpu_test/preds/",
     # all_pred_dirs = ["olive-gorge-380", "peachy-dream-519", "vibrant-night-521"],
     # all_pred_dirs = ["proud-dawn-536", "olive-gorge-380", "peachy-dream-519"],
-    all_pred_dirs = ["olive-gorge-380", "proud-dawn-536", "zany-dust-522", "peachy-dream-519", "vibrant-night-521"],
+    # all_pred_dirs = ['electric-haze-579', "olive-gorge-380", "pretty-microwave-583"],
     ensemble = False,
     device = torch.device("cpu"),
+    all_pred_dirs = ['pretty-microwave-583','electric-haze-579','olive-gorge-380','peachy-dream-519','vibrant-night-521','proud-dawn-536','zany-dust-522'] # 0.667
 )
 
 # assert len(config.all_pred_dirs) > 2
@@ -70,7 +71,7 @@ def get_best_threshold(model_name):
             best_threshold = current_threshold
 
     print()
-    print("Model: '{}': {:.2f}, # Best-Dice: {:.6f}".format(model_name, best_threshold, best_dice))
+    print("'{}': {:.2f}, # Best-Dice: {:.6f}".format(model_name, best_threshold, best_dice))
     return best_threshold
     
 def get_best_thresholds(all_thresholds):
@@ -135,15 +136,17 @@ def main():
 
     # Known Thresholds
     all_thresholds = {
-        'olive-gorge-380': -4.1, # Best-Dice: 0.652049
-        'peachy-dream-519': -3.94, # Best-Dice: 0.649420
-        'vibrant-night-521': -5.26, # Best-Dice: 0.649538
-        'proud-dawn-536': -4.62, # Best-Dice: 0.646654
-        'zany-dust-522': -3.26, # Best-Dice: 0.645343
+        'pretty-microwave-583': -4.50, # Best-Dice: 0.659503 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        'electric-haze-579': 0.34, # Best-Dice: 0.653147 - mit_b4
+        'olive-gorge-380': -4.1, # Best-Dice: 0.652049 - mit_b4
+        'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
+        'vibrant-night-521': -5.26, # Best-Dice: 0.649538 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        'proud-dawn-536': -4.62, # Best-Dice: 0.646654 - mit_b4
+        'zany-dust-522': -3.26, # Best-Dice: 0.645343 - tu-maxxvit_rmlp_small_rw_256.sw_in1k (UnetPlusPlus)
     }
 
     #Best Thresholds + Ensemble
-    # all_thresholds = get_best_thresholds(all_thresholds)
+    all_thresholds = get_best_thresholds(all_thresholds)
     ensemble_score = dice_ensemble(all_thresholds)
     print("Final: ", ensemble_score)
     return

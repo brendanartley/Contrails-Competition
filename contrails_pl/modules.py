@@ -7,7 +7,6 @@ import torchinfo
 from torchvision import transforms
 import os
 # import bitsandbytes as bnb
-
 import cv2
 import albumentations as A
 
@@ -19,7 +18,6 @@ import segmentation_models_pytorch as smp
 
 # Models
 from .models.my_models import Unet, UnetPlusPlus, MAnet
-import transformers
 
 class ContrailsDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, img_size, train=True, transform=None):
@@ -85,6 +83,7 @@ class ContrailsDataModule(pl.LightningDataModule):
         rand_scale_min: float,
         rand_scale_prob: float,
         transform: bool,
+        seed: int,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -200,24 +199,12 @@ class ContrailsModule(pl.LightningModule):
                 classes=1,
                 inter_type=transforms_map[self.hparams.mask_downsample],
             )
-        elif self.hparams.decoder_type == "hf":
-            # SEGFORMER
-            model = transformers.SegformerForSemanticSegmentation.from_pretrained(
-                self.hparams.model_name, 
-                num_labels=1, 
-                ignore_mismatched_sizes=True,
-                cache_dir=self.hparams.hf_cache,
-                )
         else:
             raise ValueError(f"{self.hparams.decoder_type} not recognized.")
-        
         return model
     
     def _init_optimizer(self):
-        return optim.AdamW(
-            self.parameters(), 
-            lr=self.hparams.lr,
-            )
+        return optim.AdamW(self.parameters(), lr=self.hparams.lr)
         # Bits + Bytes ()
         # return bnb.optim.Adam8bit(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.999))
 
@@ -228,13 +215,18 @@ class ContrailsModule(pl.LightningModule):
                 T_max = self.trainer.estimated_stepping_batches,
                 eta_min = self.hparams.lr_min,
                 )
-        elif self.hparams.scheduler == "CosineAnnealingLRWarmup":
+        elif self.hparams.scheduler == "CosineAnnealingLRCyclic":
+            # Otherwise fails on fast_dev_run
+            if self.hparams.fast_dev_run == True:
+                num_cycles = 1
+            else:
+                num_cycles = self.hparams.num_cycles
             return CosineLRScheduler(
                 optimizer, 
-                t_initial = self.trainer.estimated_stepping_batches,
-                warmup_t = self.trainer.estimated_stepping_batches//25,
+                t_initial = self.trainer.estimated_stepping_batches // num_cycles,
+                cycle_decay = 0.75,
+                cycle_limit = num_cycles,
                 lr_min = self.hparams.lr_min,
-                warmup_lr_init = self.hparams.lr * 1e-2,
                 )
         else:
             raise ValueError(f"{self.hparams.scheduler} is not a valid scheduler.")
