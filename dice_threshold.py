@@ -12,12 +12,11 @@ Finds the best dice threshold for a set of predictions.
 
 config = SimpleNamespace(
     preds_dir = "/data/bartley/gpu_test/preds/",
-    # all_pred_dirs = ["olive-gorge-380", "peachy-dream-519", "vibrant-night-521"],
-    # all_pred_dirs = ["proud-dawn-536", "olive-gorge-380", "peachy-dream-519"],
     # all_pred_dirs = ['electric-haze-579', "olive-gorge-380", "pretty-microwave-583"],
+    # all_pred_dirs = ['bright-water-589', 'treasured-waterfall-590', 'twilight-sun-592'],
     ensemble = False,
     device = torch.device("cpu"),
-    all_pred_dirs = ['pretty-microwave-583','electric-haze-579','olive-gorge-380','peachy-dream-519','vibrant-night-521','proud-dawn-536','zany-dust-522'] # 0.667
+    all_pred_dirs = ['pretty-microwave-583','electric-haze-579','olive-gorge-380','bright-water-589','treasured-waterfall-590','twilight-sun-592', 'peachy-dream-519'], # 0.672
 )
 
 # assert len(config.all_pred_dirs) > 2
@@ -137,12 +136,12 @@ def main():
     # Known Thresholds
     all_thresholds = {
         'pretty-microwave-583': -4.50, # Best-Dice: 0.659503 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        'twilight-sun-592': -2.10, # Best-Dice: 0.659122 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        'treasured-waterfall-590': -2.62, # Best-Dice: 0.657126 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        'bright-water-589': -3.94, # Best-Dice: 0.653599 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'electric-haze-579': 0.34, # Best-Dice: 0.653147 - mit_b4
         'olive-gorge-380': -4.1, # Best-Dice: 0.652049 - mit_b4
         'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
-        'vibrant-night-521': -5.26, # Best-Dice: 0.649538 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'proud-dawn-536': -4.62, # Best-Dice: 0.646654 - mit_b4
-        'zany-dust-522': -3.26, # Best-Dice: 0.645343 - tu-maxxvit_rmlp_small_rw_256.sw_in1k (UnetPlusPlus)
     }
 
     #Best Thresholds + Ensemble

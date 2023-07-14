@@ -2,7 +2,7 @@ import lightning.pytorch as pl
 import torch
 import os, shutil
 
-from contrails_pl.modules import ContrailsModule, ContrailsDataModule
+from pl_scripts.modules import CustomModule, CustomDataModule
 
 def validate(
         config,
@@ -27,7 +27,7 @@ def validate(
         os.mkdir(config.preds_dir + str(experiment_name))
 
 
-    data_module = ContrailsDataModule(
+    data_module = CustomDataModule(
         data_dir = config.data_dir,
         batch_size = config.batch_size,
         num_workers = config.num_workers,
@@ -38,7 +38,7 @@ def validate(
         seed = config.seed,
         )
 
-    module = ContrailsModule(
+    module = CustomModule(
         lr = config.lr,
         lr_min = config.lr_min,
         hf_cache = config.hf_cache,

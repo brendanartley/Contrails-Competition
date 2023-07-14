@@ -4,9 +4,9 @@ import uuid
 import torch
 import os
 
-from contrails_pl.modules import ContrailsModule, ContrailsDataModule
-from contrails_pl.helpers import load_logger_and_callbacks
-from contrails_pl.convert_weights import load_and_save
+from pl_scripts.modules import CustomModule, CustomDataModule
+from pl_scripts.helpers import load_logger_and_callbacks
+from pl_scripts.convert_weights import load_and_save
 
 def train(
         config,
@@ -43,7 +43,7 @@ def train(
         if not os.path.exists(config.preds_dir + str(experiment_name)):
             os.mkdir(config.preds_dir + str(experiment_name))
 
-    data_module = ContrailsDataModule(
+    data_module = CustomDataModule(
         data_dir = config.data_dir,
         batch_size = config.batch_size,
         num_workers = config.num_workers,
@@ -54,7 +54,7 @@ def train(
         seed = config.seed,
         )
 
-    module = ContrailsModule(
+    module = CustomModule(
         lr = config.lr,
         lr_min = config.lr_min,
         hf_cache = config.hf_cache,

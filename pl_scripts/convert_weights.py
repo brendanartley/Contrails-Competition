@@ -1,6 +1,4 @@
 import torch
-import torchinfo
-import transformers
 import segmentation_models_pytorch as smp
 from torchvision import transforms
 import argparse
@@ -79,7 +77,6 @@ class config:
         "NEAREST": transforms.InterpolationMode.NEAREST,
         "NEAREST_EXACT": transforms.InterpolationMode.NEAREST_EXACT,
     }
-    hf_cache = "/data/bartley/gpu_test/HF_CACHE/"
     weights_path = ""
     model_name = ""
     decoder_type = ""

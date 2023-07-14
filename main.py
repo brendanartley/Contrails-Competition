@@ -1,5 +1,5 @@
-from contrails_pl.train import train
-from contrails_pl.validate import validate
+from pl_scripts.train import train
+from pl_scripts.validate import validate
 
 import argparse
 from types import SimpleNamespace
@@ -15,7 +15,7 @@ config = SimpleNamespace(
     project = "Contrails-ICRGW",
     hf_cache = os.path.join(DATA_DIR, "bartley/gpu_test/HF_CACHE/"),
     torch_cache = os.path.join(DATA_DIR, "bartley/gpu_test/TORCH_CACHE/"),
-    data_dir = os.path.join(DATA_DIR, "bartley/gpu_test/contrails-images-ash-color/"),
+    data_dir = os.path.join(DATA_DIR, "bartley/gpu_test/ct_numpy_data/"),
     model_save_dir = os.path.join(DATA_DIR, "bartley/gpu_test/models/segmentation/"),
     preds_dir = os.path.join(DATA_DIR, "bartley/gpu_test/preds/"),
     model_name = "tu-maxvit_rmlp_tiny_rw_256.sw_in1k",
@@ -28,7 +28,7 @@ config = SimpleNamespace(
     batch_size = 32,
     epochs = 11,
     lr = 2e-4,
-    lr_min = 1e-5,
+    lr_min = 5e-6,
     num_cycles = 5,
     scheduler = "CosineAnnealingLR",
     dice_threshold = 0.5,

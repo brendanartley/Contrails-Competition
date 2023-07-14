@@ -16,12 +16,13 @@ def load_logger_and_callbacks(
         callbacks: lightning callbacks
     """
     # Params used to check for Bugs/Errors in Implementation
-    if fast_dev_run or overfit_batches > 0 or no_wandb == True:
+    if fast_dev_run or overfit_batches > 0:
         logger, callbacks = None, None
     else:
         logger, id_ = get_logger(
             metrics = metrics, 
             project = project,
+            no_wandb = no_wandb,
             )
         callbacks = [
             pl.callbacks.LearningRateMonitor(),
@@ -29,7 +30,7 @@ def load_logger_and_callbacks(
         ]
     return logger, callbacks
 
-def get_logger(metrics, project):
+def get_logger(metrics, project, no_wandb):
     """
     Function to load logger.
     
@@ -37,6 +38,10 @@ def get_logger(metrics, project):
         logger: lighting logger
         id_: experiment id
     """
+    if no_wandb == True:
+       return None, None
+
+    # Get logger
     logger = pl.loggers.WandbLogger(
         project = project, 
         save_dir = None,

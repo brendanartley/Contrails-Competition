@@ -7,8 +7,9 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 ### Ideas
 
 - Train larger model on Sunny
-- Make UnetExtension
-    - https://github.com/frgfm/Holocron
+- Make Unet Extension
+    - https://github.com/frgfm/Holocron/blob/f78c6c58c0007e3d892fcaa1f1ff786cdbb5195f/holocron/models/segmentation/unet3p.py#L95
+    - https://towardsdatascience.com/mobilenetv2-inverted-residuals-and-linear-bottlenecks-8a4362f4ffd5
 
 - Stage 2. Use frozen backbone to combine three prediction maps
 
@@ -58,19 +59,24 @@ EffnetV2_t
 ### Commands
 
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py
+CUDA_VISIBLE_DEVICES=0 python main.py --fast_dev_run
 
 CUDA_VISIBLE_DEVICES=2 python main.py --lr=3e-4 --lr_min=1e-7 --scheduler="CosineAnnealingLRCyclic" --val_check_interval=0.10 --num_cycles=10
 CUDA_VISIBLE_DEVICES=3 python main.py --lr=5e-4 --lr_min=1e-7 --scheduler="CosineAnnealingLRCyclic" --val_check_interval=0.10
 
 
-CUDA_VISIBLE_DEVICES=1 python main.py --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16 --val_check_interval=0.10 --seed=1
+CUDA_VISIBLE_DEVICES=0 python main.py --model_name=tu-regnety_320.swag_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16 --val_check_interval=0.10 --seed=0
+
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name=tu-coatnet_rmlp_2_rw_384.sw_in12k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16 --val_check_interval=0.10 --seed=0 --no_wandb
+
 CUDA_VISIBLE_DEVICES=2 python main.py --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16 --val_check_interval=0.10 --seed=2
 CUDA_VISIBLE_DEVICES=3 python main.py --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384 --lr=1e-4 --batch_size=16 --val_check_interval=0.10 --seed=3
 
-CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10
-CUDA_VISIBLE_DEVICES=3 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10
+CUDA_VISIBLE_DEVICES=0 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10 --seed=0 --val_check_interval=0.10
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10 --seed=1 --val_check_interval=0.10
+CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10 --seed=2 --val_check_interval=0.10
 
-CUDA_VISIBLE_DEVICES=3 python main.py --model_name=mit_b4 --img_size=512 --model_weights="/data/bartley/gpu_test/models/segmentation/electric-haze-579.pt" --save_preds
+CUDA_VISIBLE_DEVICES=3 python main.py --model_name=mit_b4 --img_size=512 --model_weights="/data/bartley/gpu_test/models/segmentation/peachy-dream-519.pt" --save_preds
 CUDA_VISIBLE_DEVICES=1 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/pretty-microwave-583.pt" --save_preds --model_name=tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k --img_size=384
 
 #### Train on all Training Data (Add --save_preds if you dont want to manually run validation after training)
@@ -93,3 +99,12 @@ CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 CUDA_VISIBLE_DEVICES=0 python main.py --decoder_type="UnetPlusPlus" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --save_preds --save_weights --seed=0 --epochs=13
 CUDA_VISIBLE_DEVICES=2 python main.py --decoder_type="UnetPlusPlus" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --save_preds --save_weights --seed=1 --epochs=13
 CUDA_VISIBLE_DEVICES=3 python main.py --decoder_type="UnetPlusPlus" --data_dir="/data/bartley/gpu_test/contrails-images-ash-color/" --save_preds --save_weights --seed=2 --epochs=13
+
+
+### Big Notes
+
+- Editor Config
+- Edit callbacks header (remove no_wandb in get_callbacks())
+- Run w/ no_wandb
+
+CUDA_VISIBLE_DEVICES=0 python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --img_size=512 --batch_size=14 --val_check_interval=0.10 --no_wandb

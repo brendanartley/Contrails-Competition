@@ -19,7 +19,7 @@ import segmentation_models_pytorch as smp
 # Models
 from .models.my_models import Unet, UnetPlusPlus, MAnet
 
-class ContrailsDataset(torch.utils.data.Dataset):
+class CustomDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, img_size, train=True, transform=None):
         self.data_dir = data_dir
         self.trn = train
@@ -48,7 +48,7 @@ class ContrailsDataset(torch.utils.data.Dataset):
     
     def __getitem__(self, index):
         fpath = str(self.records[index])
-        con_path = self.data_dir + "contrails/" + fpath + ".npy"
+        con_path = self.data_dir + "imgs/" + fpath + ".npy"
         con = np.load(str(con_path)).astype("float")
 
     	# 4th dimension is the binary mask (label)	
@@ -73,7 +73,7 @@ class ContrailsDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.records)
 
-class ContrailsDataModule(pl.LightningDataModule):
+class CustomDataModule(pl.LightningDataModule):
     def __init__(
         self,
         data_dir: str,
@@ -112,7 +112,7 @@ class ContrailsDataModule(pl.LightningDataModule):
             self.val_dataset = self._dataset(train=False, transform=self.val_transform)
             
     def _dataset(self, train, transform):
-        return ContrailsDataset(
+        return CustomDataset(
             data_dir=self.hparams.data_dir, 
             train=train,
             img_size=self.hparams.img_size,
@@ -134,7 +134,7 @@ class ContrailsDataModule(pl.LightningDataModule):
             pin_memory = True, # True for when processing is done on CPU
         )
 
-class ContrailsModule(pl.LightningModule):
+class CustomModule(pl.LightningModule):
     def __init__(
         self,
         lr: float,
@@ -242,6 +242,14 @@ class ContrailsModule(pl.LightningModule):
                 mode = 'binary',
                 smooth = self.hparams.smooth,
                 )
+        elif self.hparams.loss == "Tversky":
+            return smp.losses.TverskyLoss(
+                mode = "binary",
+                alpha = 0.45,
+                beta = 0.55,
+                gamma = 1.25,
+                smooth = self.hparams.smooth,
+            )
         else:
             raise ValueError(f"{self.hparams.loss} is not a recognized loss function.")
     
@@ -325,18 +333,11 @@ class ContrailsModule(pl.LightningModule):
             torch.save(self.model.state_dict(), weights_path)
             print("\nSaved weights. val_dice: {:.4f}".format(val_dice))
         return
-
-    # def on_train_epoch_end(self):
-    #     # Saving model weights
-    #     if self.hparams.fast_dev_run == False and self.hparams.save_model == True:
-    #         weights_path = "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.experiment_name)
-    #         torch.save(self.model.state_dict(), weights_path)
-    #     return
     
     def on_train_end(self):
         # Makes model deserializable w/out PL module
         if self.hparams.fast_dev_run == False and self.hparams.save_model == True:
             weights_path = "{}{}.pt".format(self.hparams.model_save_dir, self.hparams.experiment_name)  
-            os.system("CUDA_VISIBLE_DEVICES="" python ./contrails_pl/convert_weights.py --weights_path={} --model_name={} --decoder_type={} --mask_downsample={} --experiment_name={}"
+            os.system("CUDA_VISIBLE_DEVICES="" python ./pl_scripts/convert_weights.py --weights_path={} --model_name={} --decoder_type={} --mask_downsample={} --experiment_name={}"
                     .format(weights_path, self.hparams.model_name, self.hparams.decoder_type, self.hparams.mask_downsample, self.hparams.experiment_name))
         return
