@@ -28,21 +28,22 @@ config = SimpleNamespace(
     batch_size = 32,
     epochs = 11,
     lr = 2e-4,
-    lr_min = 5e-6,
+    lr_min = 1e-5,
     num_cycles = 5,
     scheduler = "CosineAnnealingLR",
     dice_threshold = 0.5,
     loss = "Dice",
     smooth = 0.20,
     mask_downsample="BILINEAR",
+    swa = False,
     # -- Trainer Config --
     accelerator = "gpu",
     fast_dev_run = False,
     overfit_batches = 0,
-    devices = 1,
+    strategy = "auto",
     precision = "16-mixed", # No accuracy should be lost w/ 16-mixed
     accumulate_grad_batches = 1,
-    val_check_interval = None,
+    val_check_interval = 0.10,
     num_workers = 2,
     seed = 0,
     verbose = 2,
@@ -50,6 +51,8 @@ config = SimpleNamespace(
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--swa', action='store_true', help='Stochastic weight average (starts 1/2 way through training).')
+    parser.add_argument("--strategy", type=str, default=config.strategy, help="Training strategy (auto, ddp).")
     parser.add_argument("--scheduler", type=str, default=config.scheduler, help="Learning rate scheduler for the model to use.")
     parser.add_argument("--model_name", type=str, default=config.model_name, help="Encoder model to use for training.")
     parser.add_argument("--decoder_type", type=str, default=config.decoder_type, help="Model type (seg/timm).")

@@ -1,12 +1,9 @@
 import lightning.pytorch as pl
-import wandb
-import uuid
 import torch
 import os
 
 from pl_scripts.modules import CustomModule, CustomDataModule
 from pl_scripts.helpers import load_logger_and_callbacks
-from pl_scripts.convert_weights import load_and_save
 
 def train(
         config,
@@ -33,10 +30,14 @@ def train(
         overfit_batches = config.overfit_batches,
         no_wandb = config.no_wandb,
         project = config.project,
+        swa = config.swa,
+        epochs = config.epochs,
+        lr = config.lr,
     )
 
     # Get run metadata
-    experiment_name = logger._experiment.name if logger else None
+    try: experiment_name = logger._experiment.name
+    except: experiment_name = None
 
     # Create directory for saving predictions
     if config.save_preds:
@@ -80,7 +81,7 @@ def train(
     trainer = pl.Trainer(
         accelerator = config.accelerator,
         benchmark = True, # set to True if input size does not change (increases speed)
-        devices = config.devices,
+        # devices = config.devices,
         fast_dev_run = config.fast_dev_run,
         max_epochs = config.epochs,
         num_sanity_val_steps = 1,
@@ -93,6 +94,7 @@ def train(
         val_check_interval = config.val_check_interval,
         enable_checkpointing = False,
         gradient_clip_val = 1.0,
+        strategy = config.strategy,
     )
     trainer.fit(module, datamodule=data_module)
     trainer.validate(module, datamodule=data_module)

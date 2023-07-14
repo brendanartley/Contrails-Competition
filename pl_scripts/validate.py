@@ -1,6 +1,6 @@
 import lightning.pytorch as pl
 import torch
-import os, shutil
+import os
 
 from pl_scripts.modules import CustomModule, CustomDataModule
 

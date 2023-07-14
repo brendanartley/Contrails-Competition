@@ -1,42 +1,29 @@
 import lightning.pytorch as pl
 import torch
 
-def load_logger_and_callbacks(
-    fast_dev_run,
-    metrics,
-    overfit_batches,
-    no_wandb,
-    project,
-):
-    """
-    Function that loads logger and callbacks.
-    
-    Returns:
-        logger: lighting logger
-        callbacks: lightning callbacks
-    """
-    # Params used to check for Bugs/Errors in Implementation
-    if fast_dev_run or overfit_batches > 0:
-        logger, callbacks = None, None
-    else:
-        logger, id_ = get_logger(
-            metrics = metrics, 
-            project = project,
-            no_wandb = no_wandb,
-            )
-        callbacks = [
-            pl.callbacks.LearningRateMonitor(),
-            CustomWeightSaver(),
-        ]
-    return logger, callbacks
+class CustomWeightSaver(pl.Callback):
+  """
+  Saves model weights if the val_dice is best so far.
+  """
+  def __init__(self):
+    super().__init__()
+    self.best_val_dice = 0
+
+  def on_validation_epoch_end(self, trainer, module):
+    if module.hparams.fast_dev_run == False and module.hparams.save_model == True:
+
+        # Update best val dice
+        val_dice = trainer.logged_metrics["val_dice"].item()
+        if val_dice > self.best_val_dice:
+            self.best_val_dice = val_dice
+
+            # Save weights
+            module._save_weights(val_dice)
+    return
 
 def get_logger(metrics, project, no_wandb):
     """
-    Function to load logger.
-    
-    Returns:
-        logger: lighting logger
-        id_: experiment id
+    Function to load wandb logger.
     """
     if no_wandb == True:
        return None, None
@@ -54,22 +41,48 @@ def get_logger(metrics, project, no_wandb):
     
     return logger, id_
 
-class CustomWeightSaver(pl.Callback):
-  """
-  Saves model weights if best val_score so far.
-  """
-  def __init__(self):
-    super().__init__()
-    self.best_val_dice = 0
+def get_SWA(epochs, lr):
+   """
+   Stochastic weight averaging.
+   """
+   mid_epoch = epochs - (epochs//2)
+   return pl.callbacks.StochasticWeightAveraging(swa_lrs=lr, annealing_epochs=10-mid_epoch, swa_epoch_start=mid_epoch, annealing_strategy="cos")
 
-  def on_validation_epoch_end(self, trainer, module):
-    if module.hparams.fast_dev_run == False and module.hparams.save_model == True:
+def load_logger_and_callbacks(
+    fast_dev_run,
+    metrics,
+    overfit_batches,
+    no_wandb,
+    project,
+    swa,
+    epochs,
+    lr
+):
+    callbacks = []
 
-        # Update best val dice
-        val_dice = trainer.logged_metrics["val_dice"].item()
-        if val_dice > self.best_val_dice:
-            self.best_val_dice = val_dice
+    # Test Runs.
+    if fast_dev_run or overfit_batches > 0:
+        return None, None
+    
+    # Stochastic weight averaging
+    if swa == True:
+       swa_callback = get_SWA(
+          epochs = epochs,
+          lr = lr,
+       )
+       callbacks.append(swa_callback)
 
-            # Save weights
-            module._save_weights(val_dice)
-    return
+    # Other Callbacks
+    callbacks.extend([
+        pl.callbacks.LearningRateMonitor(),
+        CustomWeightSaver(),
+    ])
+
+    # Logger
+    logger, id_ = get_logger(
+        metrics = metrics, 
+        project = project,
+        no_wandb = no_wandb,
+        )
+
+    return logger, callbacks

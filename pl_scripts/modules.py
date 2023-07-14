@@ -18,6 +18,7 @@ import segmentation_models_pytorch as smp
 
 # Models
 from .models.my_models import Unet, UnetPlusPlus, MAnet
+from .models.custom_models import CustomUnet
 
 class CustomDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir, img_size, train=True, transform=None):
@@ -37,8 +38,8 @@ class CustomDataset(torch.utils.data.Dataset):
 
     def load_records(self):
 
-        train_df = pd.read_csv(self.data_dir + "train_df.csv")#.head(1000)
-        valid_df = pd.read_csv(self.data_dir + "valid_df.csv")#.head(1000)
+        train_df = pd.read_csv(self.data_dir + "train_df.csv")
+        valid_df = pd.read_csv(self.data_dir + "valid_df.csv")
 
         # Train on all data
         if self.trn == True:
@@ -199,12 +200,18 @@ class CustomModule(pl.LightningModule):
                 classes=1,
                 inter_type=transforms_map[self.hparams.mask_downsample],
             )
+        elif self.hparams.decoder_type == "CustomUnet":
+            model = CustomUnet(
+                encoder_name=self.hparams.model_name, 
+                in_channels=3,
+                classes=1,
+            )
         else:
             raise ValueError(f"{self.hparams.decoder_type} not recognized.")
         return model
     
     def _init_optimizer(self):
-        return optim.AdamW(self.parameters(), lr=self.hparams.lr)
+        return optim.AdamW(self.trainer.model.parameters(), lr=self.hparams.lr)
         # Bits + Bytes ()
         # return bnb.optim.Adam8bit(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.999))
 
@@ -322,9 +329,9 @@ class CustomModule(pl.LightningModule):
         return self._shared_step(batch, "train", batch_idx)
     
     def _log(self, stage, loss, batch_size):
-        self.log(f"{stage}_loss", loss, prog_bar=True, batch_size=batch_size)
+        self.log(f"{stage}_loss", loss, prog_bar=True, batch_size=batch_size, sync_dist=True)
         if stage == "val":
-            self.log_dict(self.metrics[f"{stage}_metrics"], prog_bar=True, batch_size=batch_size)
+            self.log_dict(self.metrics[f"{stage}_metrics"], prog_bar=True, batch_size=batch_size, sync_dist=True)
 
     def _save_weights(self, val_dice):
         # Saving model weights
