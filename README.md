@@ -73,12 +73,19 @@ EffnetV2_t
 
 CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
-CUDA_VISIBLE_DEVICES=0,1,3,4 python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --img_size=512 --lr=1e-4 --batch_size=4 --val_check_interval=0.10 --precision="32" --no_wandb
 
-CUDA_VISIBLE_DEVICES=0,1 python main.py --strategy="ddp" --model_name=mit_b5 --img_size=512 --lr=1e-4 --batch_size=8 --val_check_interval=0.10
+CUDA_VISIBLE_DEVICES=0,1,2,3 python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --img_size=512 --lr=8e-4 --batch_size=3 --val_check_interval=0.10 --precision="32" --no_wandb --swa
+
+CUDA_VISIBLE_DEVICES=1,2,3 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=384 --lr=1e-4 --batch_size=5 --val_check_interval=0.10 --swa
 
 CUDA_VISIBLE_DEVICES=0 python main.py --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10 --seed=0 --val_check_interval=0.10
 
+CUDA_VISIBLE_DEVICES=0 python main.py --swa_epochs=5 --no_wandb
+
+CUDA_VISIBLE_DEVICES=0 wandb agent brendanartley/Contrails-ICRGW/uwchrqjz
+CUDA_VISIBLE_DEVICES=1 wandb agent brendanartley/Contrails-ICRGW/uwchrqjz
+CUDA_VISIBLE_DEVICES=2 wandb agent brendanartley/Contrails-ICRGW/uwchrqjz
+CUDA_VISIBLE_DEVICES=3 wandb agent brendanartley/Contrails-ICRGW/uwchrqjz
 
 
 CUDA_VISIBLE_DEVICES=0 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/light-valley-599.pt" --model_name=mit_b4 --img_size=512 --lr=1e-4 --batch_size=15 --val_check_interval=0.10 --seed=0 --val_check_interval=0.10 --save_preds

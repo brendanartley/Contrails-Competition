@@ -41,12 +41,13 @@ def get_logger(metrics, project, no_wandb):
     
     return logger, id_
 
-def get_SWA(epochs, lr):
+def get_SWA(epochs, swa_epochs, lr_min):
    """
    Stochastic weight averaging.
    """
-   mid_epoch = epochs - (epochs//2)
-   return pl.callbacks.StochasticWeightAveraging(swa_lrs=lr, annealing_epochs=10-mid_epoch, swa_epoch_start=mid_epoch, annealing_strategy="cos")
+   if swa_epochs > epochs:
+      raise ValueError("swa_epochs must be < epochs")
+   return pl.callbacks.StochasticWeightAveraging(swa_lrs=lr_min, annealing_epochs=swa_epochs, swa_epoch_start=epochs-swa_epochs, annealing_strategy="cos")
 
 def load_logger_and_callbacks(
     fast_dev_run,
@@ -55,8 +56,9 @@ def load_logger_and_callbacks(
     no_wandb,
     project,
     swa,
+    swa_epochs,
     epochs,
-    lr
+    lr_min
 ):
     callbacks = []
 
@@ -68,7 +70,8 @@ def load_logger_and_callbacks(
     if swa == True:
        swa_callback = get_SWA(
           epochs = epochs,
-          lr = lr,
+          swa_epochs = swa_epochs,
+          lr_min = lr_min,
        )
        callbacks.append(swa_callback)
 

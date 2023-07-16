@@ -36,6 +36,7 @@ config = SimpleNamespace(
     smooth = 0.20,
     mask_downsample="BILINEAR",
     swa = False,
+    swa_epochs = 5,
     # -- Trainer Config --
     accelerator = "gpu",
     fast_dev_run = False,
@@ -51,7 +52,9 @@ config = SimpleNamespace(
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--swa', action='store_true', help='Stochastic weight average (starts 1/2 way through training).')
+    # parser.add_argument('--swa', action='store_true', help='Stochastic weight average (starts 1/2 way through training).')
+    parser.add_argument('--swa', type=bool, default=config.swa, help='Stochastic weight average (starts 1/2 way through training).')
+    parser.add_argument("--swa_epochs", type=int, default=config.swa_epochs, help="Number of SWA epochs to do.")
     parser.add_argument("--strategy", type=str, default=config.strategy, help="Training strategy (auto, ddp).")
     parser.add_argument("--scheduler", type=str, default=config.scheduler, help="Learning rate scheduler for the model to use.")
     parser.add_argument("--model_name", type=str, default=config.model_name, help="Encoder model to use for training.")

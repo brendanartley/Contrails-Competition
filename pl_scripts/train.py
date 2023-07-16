@@ -3,7 +3,7 @@ import torch
 import os
 
 from pl_scripts.modules import CustomModule, CustomDataModule
-from pl_scripts.helpers import load_logger_and_callbacks
+from pl_scripts.callbacks.helpers import load_logger_and_callbacks
 
 def train(
         config,
@@ -31,8 +31,9 @@ def train(
         no_wandb = config.no_wandb,
         project = config.project,
         swa = config.swa,
+        swa_epochs = config.swa_epochs,
         epochs = config.epochs,
-        lr = config.lr,
+        lr_min = config.lr_min,
     )
 
     # Get run metadata
@@ -75,6 +76,7 @@ def train(
         smooth = config.smooth,
         dice_threshold = config.dice_threshold,
         mask_downsample = config.mask_downsample,
+        swa = config.swa,
     )
 
     # Trainer Args: https://lightning.ai/docs/pytorch/stable/common/trainer.html#benchmark

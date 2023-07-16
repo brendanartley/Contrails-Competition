@@ -157,6 +157,7 @@ class CustomModule(pl.LightningModule):
         smooth: float,
         dice_threshold: float,
         mask_downsample: str,
+        swa: bool,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -340,6 +341,17 @@ class CustomModule(pl.LightningModule):
             torch.save(self.model.state_dict(), weights_path)
             print("\nSaved weights. val_dice: {:.4f}".format(val_dice))
         return
+    
+    # --- TEMP SWA FIX ---
+    # Source: https://github.com/Lightning-AI/lightning/issues/17245
+    def on_train_epoch_start(self) -> None:
+        if self.hparams.swa == True and self.current_epoch == self.trainer.max_epochs - 1:
+            # Workaround to always save the last epoch until the bug is fixed in lightning (https://github.com/Lightning-AI/lightning/issues/4539)
+            self.trainer.check_val_every_n_epoch = 1
+
+            # Disable backward pass for SWA until the bug is fixed in lightning (https://github.com/Lightning-AI/lightning/issues/17245)
+            self.automatic_optimization = False
+
     
     def on_train_end(self):
         # Makes model deserializable w/out PL module
