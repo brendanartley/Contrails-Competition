@@ -1,9 +1,10 @@
 import lightning.pytorch as pl
 import torch
-import torch.nn as nn
+# import torch.nn as nn
+# import torch.nn.functional as F
 import torch.optim as optim
 import torchmetrics
-import torchinfo
+# import torchinfo
 from torchvision import transforms
 import os
 # import bitsandbytes as bnb
@@ -290,12 +291,6 @@ class CustomModule(pl.LightningModule):
     def _shared_step(self, batch, stage, batch_idx):
         x, y, fpath = batch
         y_logits = self(x)
-
-        # For huggingface models
-        if self.hparams.decoder_type == "hf":
-            y_logits = y_logits.logits
-            y_logits = torch.nn.functional.interpolate(y_logits, size=256, mode="bilinear", align_corners=False)
-
         loss = self.loss_fn(y_logits, y)
 
         # Compute Metric

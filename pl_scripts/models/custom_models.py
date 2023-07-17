@@ -113,10 +113,13 @@ class DecoderBlock(nn.Module):
         if self.scale_factor != 1.0:
             x = F.interpolate(x, scale_factor=self.scale_factor, mode=self.interpolate)
         if skip is not None:
+            # print("d1, x1: {} skip: {}".format(x.shape, skip.shape))
             x = torch.cat([x, skip], dim=1)
-            
+            # print("d2, x2: {} skip: {}".format(x.shape, skip.shape))
+        # print("d3, x3: {} ".format(x.shape), self.test)
         x = self.conv1(x)
         x = self.conv2(x)
+        # print("d4, x4: {}\n".format(x.shape))
         return x
 
 class SegmentationHead(nn.Sequential):
@@ -143,18 +146,17 @@ class UnetDecoder(nn.Module):
         else:
             self.center = nn.Identity()
 
-        in_channels = [in_chs + skip_chs for in_chs, skip_chs in zip(
-            [encoder_channels[0]] + list(decoder_channels[:-1]),
-            list(encoder_channels[1:]) + [0])]
+        in_channels = [in_chs + skip_chs for in_chs, skip_chs in zip([encoder_channels[0]] + list(decoder_channels[:-1]), list(encoder_channels[1:]) + [0])]
         out_channels = decoder_channels
-
+        
+        # print(in_channels)
+        # print(out_channels)
+        
         self.blocks = nn.ModuleList()
         for in_chs, out_chs in zip(in_channels, out_channels):
             self.blocks.append(DecoderBlock(in_chs, out_chs, norm_layer=norm_layer, interpolate=interpolate))
 
-        # self.final_conv = nn.Conv2d(out_channels[-1], final_channels, kernel_size=(1, 1))
         self.final_conv = SegmentationHead(out_channels[-1], final_channels)
-
         self._init_weight()
 
     def _init_weight(self):

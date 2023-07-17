@@ -24,8 +24,11 @@ config = SimpleNamespace(
         'light-valley-599': -1.38, # Best-Dice: 0.652941 - mit_b4
         'olive-gorge-380': -4.1, # Best-Dice: 0.652049 - mit_b4
         'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
+        'spring-sweep-2': -1.38, # Best-Dice: 0.636749
     },
     all_pred_dirs = ["bfg_1", "bfg_1", 'pretty-microwave-583', 'twilight-sun-592', 'treasured-waterfall-590', 'bright-water-589', 'electric-haze-579'], # 0.677
+    # all_pred_dirs = ["spring-sweep-2", "bfg_1", 'pretty-microwave-583', 'twilight-sun-592', 'treasured-waterfall-590', 'bright-water-589', 'electric-haze-579'], # 0.677
+
 )
 
 # assert len(config.all_pred_dirs) > 2
