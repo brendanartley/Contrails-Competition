@@ -1,7 +1,7 @@
 import lightning.pytorch as pl
 import torch
 # import torch.nn as nn
-# import torch.nn.functional as F
+import torch.nn.functional as F
 import torch.optim as optim
 import torchmetrics
 # import torchinfo
@@ -208,6 +208,19 @@ class CustomModule(pl.LightningModule):
                 in_channels=3,
                 classes=1,
             )
+        # elif self.hparams.decoder_type == "Test":
+        #     # ---- Hacking MMSegmentation ----
+        #     from mmseg.registry import MODELS
+        #     from mmengine.model.utils import revert_sync_batchnorm
+        #     from mmseg.utils import register_all_modules
+        #     from mmengine.config import Config
+        #     register_all_modules()
+
+        #     cfg_file = '/home/bartley/gpu_test/ICRGW/mmseg/my_config.py'
+        #     mmconfig = Config.fromfile(cfg_file)
+        #     model = revert_sync_batchnorm(MODELS.build(mmconfig.model))
+        #     model.init_weights() # initialize the model with pretrained: mmengine - INFO - load model from: ...
+
         else:
             raise ValueError(f"{self.hparams.decoder_type} not recognized.")
         return model
@@ -291,6 +304,14 @@ class CustomModule(pl.LightningModule):
     def _shared_step(self, batch, stage, batch_idx):
         x, y, fpath = batch
         y_logits = self(x)
+
+        # # For MMSeg Tests        
+        # if self.hparams.decoder_type.startswith("Test"):
+        #     if batch_idx == 0: print(y_logits.shape, y.shape)
+        #     y_logits = F.interpolate(y_logits, 256)
+        #     y_logits = y_logits.squeeze(dim=1)
+        #     if batch_idx == 0: print(y_logits.shape, y.shape)
+
         loss = self.loss_fn(y_logits, y)
 
         # Compute Metric

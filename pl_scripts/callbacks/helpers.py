@@ -47,7 +47,7 @@ def get_SWA(epochs, swa_epochs, lr_min):
    """
    if swa_epochs > epochs:
       raise ValueError("swa_epochs must be < epochs")
-   return pl.callbacks.StochasticWeightAveraging(swa_lrs=lr_min, annealing_epochs=swa_epochs, swa_epoch_start=epochs-swa_epochs, annealing_strategy="cos")
+   return pl.callbacks.StochasticWeightAveraging(swa_lrs=lr_min, annealing_epochs=swa_epochs, swa_epoch_start=epochs-swa_epochs, annealing_strategy="linear")
 
 def load_logger_and_callbacks(
     fast_dev_run,

@@ -36,7 +36,7 @@ config = SimpleNamespace(
     smooth = 0.20,
     mask_downsample="BILINEAR",
     swa = False,
-    swa_epochs = 4,
+    swa_epochs = 3,
     # -- Trainer Config --
     accelerator = "gpu",
     fast_dev_run = False,
