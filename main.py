@@ -52,7 +52,7 @@ config = SimpleNamespace(
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # parser.add_argument('--swa', action='store_true', help='Stochastic weight average (starts 1/2 way through training).')
+    parser.add_argument('--val', action='store_true', help='Wether to do a validation run.')
     parser.add_argument('--swa', type=bool, default=config.swa, help='Stochastic weight average (starts 1/2 way through training).')
     parser.add_argument("--swa_epochs", type=int, default=config.swa_epochs, help="Number of SWA epochs to do.")
     parser.add_argument("--strategy", type=str, default=config.strategy, help="Training strategy (auto, ddp).")
@@ -94,7 +94,7 @@ def parse_args():
 def main(config):
 
     # Train Run
-    if config.model_weights == None:
+    if config.val == False:
         module = train(config)
     # Validation Run
     else:

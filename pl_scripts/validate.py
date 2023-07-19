@@ -67,7 +67,7 @@ def validate(
         benchmark = True, # set to True if input size does not change (increases speed)
         fast_dev_run = config.fast_dev_run,
         max_epochs = config.epochs,
-        num_sanity_val_steps = 1,
+        num_sanity_val_steps = 0,
         overfit_batches = config.overfit_batches,
         precision = config.precision,
         callbacks = None,

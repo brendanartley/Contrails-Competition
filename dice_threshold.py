@@ -17,25 +17,27 @@ config = SimpleNamespace(
     all_thresholds = {
         'bfg_1': -3.02, # Best-Dice: 0.667923 - tu-maxvit_base_tf_512.in21k_ft_in1k
         'bfg_2': -3.90, # Best-Dice: 0.666979 - tu-maxvit_base_tf_512.in21k_ft_in1k
-        'silvery-plasma-621': -3.14, # Best-Dice: 0.662511 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        'bfg_874': -2.90, # Best-Dice: 0.663905 - tu-maxvit_base_tf_512.in21k_ft_in1k
+        'bfg_122': -4.06, # Best-Dice: 0.663042 - tu-maxvit_base_tf_512.in21k_ft_in1k
+        'bfg_867': -2.22, # Best-Dice: 0.662304 - tu-maxvit_base_tf_512.in21k_ft_in1k
+        # 'silvery-plasma-621': -3.14, # Best-Dice: 0.662511 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'pretty-microwave-583': -4.50, # Best-Dice: 0.659503 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'twilight-sun-592': -2.10, # Best-Dice: 0.659122 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'denim-blaze-658': -3.58, # Best-Dice: 0.657714 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'fresh-bee-660': -2.82, # Best-Dice: 0.657683 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'neat-wind-659': -2.82, # Best-Dice: 0.657312 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        # 'twilight-sun-592': -2.10, # Best-Dice: 0.659122 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        # 'denim-blaze-658': -3.58, # Best-Dice: 0.657714 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        # 'fresh-bee-660': -2.82, # Best-Dice: 0.657683 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        # 'neat-wind-659': -2.82, # Best-Dice: 0.657312 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'treasured-waterfall-590': -2.62, # Best-Dice: 0.657126 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'bright-water-589': -3.94, # Best-Dice: 0.653599 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        # 'bright-water-589': -3.94, # Best-Dice: 0.653599 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'iconic-field-657': -1.74, # Best-Dice: 0.653737 - mit_b4
-        'electric-haze-579': 0.34, # Best-Dice: 0.653147 - mit_b4
-        'light-valley-599': -1.38, # Best-Dice: 0.652941 - mit_b4
-        'olive-gorge-380': -4.1, # Best-Dice: 0.652049 - mit_b4
-        'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
-        'spring-sweep-2': -1.38, # Best-Dice: 0.636749 - mit_tiny
+        # 'electric-haze-579': 0.34, # Best-Dice: 0.653147 - mit_b4
+        # 'light-valley-599': -1.38, # Best-Dice: 0.652941 - mit_b4
+        # 'olive-gorge-380': -4.1, # Best-Dice: 0.652049 - mit_b4
+        # 'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
+        # 'spring-sweep-2': -1.38, # Best-Dice: 0.636749 - mit_tiny
     },
-    all_pred_dirs = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657'], # 0.6792
+    # models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657', "azure-elevator-669"], # 0.679
+    # models = ["bfg_1", "bfg_2", "bfg_874", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657'],
 )
-
-# assert len(config.all_pred_dirs) > 2
 
 
 def get_dice_score(model_name, threshold=0.5):
@@ -95,7 +97,7 @@ def get_best_thresholds(all_thresholds):
     res = {}
 
     # Iterate over all folders
-    for model_name in config.all_pred_dirs:
+    for model_name in config.models:
 
         # Break if already computed
         if model_name in all_thresholds:
@@ -115,10 +117,10 @@ def dice_ensemble(all_thresholds):
     # Define Metric
     metric = torchmetrics.Dice(average = 'micro', threshold=0.5)
 
-    for batch_path in tqdm(os.listdir(os.path.join(config.preds_dir, config.all_pred_dirs[0]))):
+    for batch_path in tqdm(os.listdir(os.path.join(config.preds_dir, config.models[0]))):
 
         cur_batch = []
-        for fold_path in config.all_pred_dirs:
+        for fold_path in config.models:
             
             # Load preds + truth
             loaded_tensor = torch.load(os.path.join(config.preds_dir, fold_path, batch_path), map_location=config.device)
@@ -146,7 +148,7 @@ def dice_ensemble(all_thresholds):
 def main():
 
     # # Simple dice scores
-    # for model_name in config.all_pred_dirs:
+    # for model_name in config.models:
     #     print("Model {}, Score: {:.6f}".format(model_name, get_dice_score(model_name, threshold=0.5)))
 
     # Get thresholds

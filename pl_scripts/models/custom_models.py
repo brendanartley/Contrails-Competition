@@ -116,7 +116,7 @@ class DecoderBlock(nn.Module):
             # print("d1, x1: {} skip: {}".format(x.shape, skip.shape))
             x = torch.cat([x, skip], dim=1)
             # print("d2, x2: {} skip: {}".format(x.shape, skip.shape))
-        # print("d3, x3: {} ".format(x.shape), self.test)
+        # print("d3, x3: {} ".format(x.shape))
         x = self.conv1(x)
         x = self.conv2(x)
         # print("d4, x4: {}\n".format(x.shape))
@@ -178,6 +178,8 @@ class UnetDecoder(nn.Module):
         for i, b in enumerate(self.blocks):
             skip = skips[i] if i < len(skips) else None
             x = b(x, skip)
+            # try: print(x.shape, skip.shape)
+            # except: print(x.shape, None)
         x = self.final_conv(x)
 
         # Reshape to mask shape (256)
