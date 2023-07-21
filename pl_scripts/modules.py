@@ -1,6 +1,6 @@
 import lightning.pytorch as pl
 import torch
-# import torch.nn as nn
+import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import torchmetrics
@@ -18,7 +18,7 @@ import numpy as np
 import segmentation_models_pytorch as smp
 
 # Models
-from .models.my_models import Unet, UnetPlusPlus, MAnet
+from .models.my_models import Unet, UnetPlusPlus, MAnet, DeepLabV3Plus
 from .models.custom_models import CustomUnet
 
 class CustomDataset(torch.utils.data.Dataset):
@@ -130,10 +130,11 @@ class CustomDataModule(pl.LightningDataModule):
     def _dataloader(self, dataset, train=False):
         return torch.utils.data.DataLoader(
             dataset,
-            shuffle = train,
             batch_size = self.hparams.batch_size,
             num_workers = self.hparams.num_workers,
             pin_memory = True, # True for when processing is done on CPU
+            drop_last = train, # Otherwise resnet encoders fail
+            shuffle = train,
         )
 
 class CustomModule(pl.LightningModule):
@@ -174,6 +175,7 @@ class CustomModule(pl.LightningModule):
             "Unet": Unet,
             "UnetPlusPlus": UnetPlusPlus,
             "MAnet": MAnet,
+            "DeepLabV3Plus": DeepLabV3Plus,
         }
         # Transformation Options (downsampling)
         transforms_map = {
@@ -204,6 +206,17 @@ class CustomModule(pl.LightningModule):
         if self.hparams.model_weights != None:
             tmp_model = torch.load(self.hparams.model_weights)
             model.load_state_dict(tmp_model.state_dict())
+
+        # Testing: Freezing BN Layers in encoder
+        for module in model.encoder.modules():
+            # print(module)
+            if isinstance(module, nn.BatchNorm2d):
+                print("Freezing BN Layer in encoder!")
+                if hasattr(module, 'weight'):
+                    module.weight.requires_grad_(False)
+                if hasattr(module, 'bias'):
+                    module.bias.requires_grad_(False)
+                module.eval()
 
         return model
     

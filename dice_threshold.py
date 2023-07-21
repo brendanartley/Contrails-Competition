@@ -23,10 +23,12 @@ config = SimpleNamespace(
         # 'silvery-plasma-621': -3.14, # Best-Dice: 0.662511 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'pretty-microwave-583': -4.50, # Best-Dice: 0.659503 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         # 'twilight-sun-592': -2.10, # Best-Dice: 0.659122 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        'bfg_612': -3.30, # Best-Dice: 0.657971 - mit_b4 (800 img_size)
         # 'denim-blaze-658': -3.58, # Best-Dice: 0.657714 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         # 'fresh-bee-660': -2.82, # Best-Dice: 0.657683 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         # 'neat-wind-659': -2.82, # Best-Dice: 0.657312 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'treasured-waterfall-590': -2.62, # Best-Dice: 0.657126 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        'bfg_852': -2.62, # Best-Dice: 0.657135 - mit_b4 (800 img_size)
         # 'bright-water-589': -3.94, # Best-Dice: 0.653599 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'iconic-field-657': -1.74, # Best-Dice: 0.653737 - mit_b4
         # 'electric-haze-579': 0.34, # Best-Dice: 0.653147 - mit_b4
@@ -35,8 +37,8 @@ config = SimpleNamespace(
         # 'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
         # 'spring-sweep-2': -1.38, # Best-Dice: 0.636749 - mit_tiny
     },
-    # models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657', "azure-elevator-669"], # 0.679
-    # models = ["bfg_1", "bfg_2", "bfg_874", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657'],
+    # models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657'], # 0.6791
+    models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'bfg_852'], # 0.6800
 )
 
 

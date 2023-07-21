@@ -26,10 +26,12 @@ config = SimpleNamespace(
         # 'silvery-plasma-621': -3.14, # Best-Dice: 0.662511 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'pretty-microwave-583': -4.50, # Best-Dice: 0.659503 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         # 'twilight-sun-592': -2.10, # Best-Dice: 0.659122 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        'bfg_612': -3.30, # Best-Dice: 0.657971 - mit_b4 (800 img_size)
         # 'denim-blaze-658': -3.58, # Best-Dice: 0.657714 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         # 'fresh-bee-660': -2.82, # Best-Dice: 0.657683 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         # 'neat-wind-659': -2.82, # Best-Dice: 0.657312 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'treasured-waterfall-590': -2.62, # Best-Dice: 0.657126 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
+        'bfg_852': -2.62, # Best-Dice: 0.657135 - mit_b4 (800 img_size)
         # 'bright-water-589': -3.94, # Best-Dice: 0.653599 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'iconic-field-657': -1.74, # Best-Dice: 0.653737 - mit_b4
         # 'electric-haze-579': 0.34, # Best-Dice: 0.653147 - mit_b4
@@ -38,9 +40,10 @@ config = SimpleNamespace(
         # 'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
         # 'spring-sweep-2': -1.38, # Best-Dice: 0.636749 - mit_tiny
     },
-    # models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657', "azure-elevator-669"], # 0.679
-    models = ["bfg_1", "bfg_2", "bfg_867", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657'], # 0.6791
+    # models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657'], # 0.679
+    models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'bfg_612'], # 0.679
 )
+
 
 known_corr = {'bfg_1': {'bfg_2': 0.9995815, 'bfg_874': 0.9995744, 'bfg_122': 0.9995198, 'bfg_867': 0.999516, 'pretty-microwave-583': 0.9993104, 'treasured-waterfall-590': 0.9993014, 'iconic-field-657': 0.9992986}, 'bfg_2': {'bfg_1': 0.9995815, 'bfg_874': 0.999568, 'bfg_122': 0.9995651, 'bfg_867': 0.9995279, 'pretty-microwave-583': 0.9993357, 'treasured-waterfall-590': 0.9993243, 'iconic-field-657': 0.9993303}, 'bfg_874': {'bfg_1': 0.9995744, 'bfg_2': 0.999568, 'bfg_122': 0.9995621, 'bfg_867': 0.9995204, 'pretty-microwave-583': 0.9993286, 'treasured-waterfall-590': 0.9993176, 'iconic-field-657': 0.9993291}, 'bfg_122': {'bfg_1': 0.9995198, 'bfg_2': 0.9995651, 'bfg_874': 0.9995621, 'bfg_867': 0.9995058, 'pretty-microwave-583': 0.9993064, 'treasured-waterfall-590': 0.9992935, 'iconic-field-657': 0.9992972}, 'bfg_867': {'bfg_1': 0.999516, 'bfg_2': 0.9995279, 'bfg_874': 0.9995204, 'bfg_122': 0.9995058, 'pretty-microwave-583': 0.9992991, 'treasured-waterfall-590': 0.999279, 'iconic-field-657': 0.9993068}, 'pretty-microwave-583': {'bfg_1': 0.9993104, 'bfg_2': 0.9993357, 'bfg_874': 0.9993286, 'bfg_122': 0.9993064, 'bfg_867': 0.9992991, 'treasured-waterfall-590': 0.9994658, 'iconic-field-657': 0.9993536}, 'treasured-waterfall-590': {'bfg_1': 0.9993014, 'bfg_2': 0.9993243, 'bfg_874': 0.9993176, 'bfg_122': 0.9992935, 'bfg_867': 0.999279, 'pretty-microwave-583': 0.9994658, 'iconic-field-657': 0.9993266}, 'iconic-field-657': {'bfg_1': 0.9992986, 'bfg_2': 0.9993303, 'bfg_874': 0.9993291, 'bfg_122': 0.9992972, 'bfg_867': 0.9993068, 'pretty-microwave-583': 0.9993536, 'treasured-waterfall-590': 0.9993266}}
 
