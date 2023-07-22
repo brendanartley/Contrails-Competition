@@ -1,6 +1,7 @@
 import lightning.pytorch as pl
 import torch
 import os
+import numpy as np
 
 from pl_scripts.modules import CustomModule, CustomDataModule
 from pl_scripts.callbacks.helpers import load_logger_and_callbacks

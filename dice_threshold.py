@@ -18,8 +18,10 @@ config = SimpleNamespace(
         'bfg_1': -3.02, # Best-Dice: 0.667923 - tu-maxvit_base_tf_512.in21k_ft_in1k
         'bfg_2': -3.90, # Best-Dice: 0.666979 - tu-maxvit_base_tf_512.in21k_ft_in1k
         'bfg_874': -2.90, # Best-Dice: 0.663905 - tu-maxvit_base_tf_512.in21k_ft_in1k
+        'bfg_3': -5.90, # Best-Dice: 0.663819 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k (784)
         'bfg_122': -4.06, # Best-Dice: 0.663042 - tu-maxvit_base_tf_512.in21k_ft_in1k
         'bfg_867': -2.22, # Best-Dice: 0.662304 - tu-maxvit_base_tf_512.in21k_ft_in1k
+        'bfg_416': -1.62, # Best-Dice: 0.662164 - tu-maxvit_base_tf_512.in21k_ft_in1k
         # 'silvery-plasma-621': -3.14, # Best-Dice: 0.662511 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'pretty-microwave-583': -4.50, # Best-Dice: 0.659503 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         # 'twilight-sun-592': -2.10, # Best-Dice: 0.659122 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
@@ -29,6 +31,7 @@ config = SimpleNamespace(
         # 'neat-wind-659': -2.82, # Best-Dice: 0.657312 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'treasured-waterfall-590': -2.62, # Best-Dice: 0.657126 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'bfg_852': -2.62, # Best-Dice: 0.657135 - mit_b4 (800 img_size)
+        'bfg_684': -5.06, # Best-Dice: 0.656235 - tu-resnest269e.in1k (800 img size)
         # 'bright-water-589': -3.94, # Best-Dice: 0.653599 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'iconic-field-657': -1.74, # Best-Dice: 0.653737 - mit_b4
         # 'electric-haze-579': 0.34, # Best-Dice: 0.653147 - mit_b4
@@ -37,8 +40,9 @@ config = SimpleNamespace(
         # 'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
         # 'spring-sweep-2': -1.38, # Best-Dice: 0.636749 - mit_tiny
     },
-    # models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657'], # 0.6791
-    models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'bfg_852'], # 0.6800
+    # models = ["bfg_1", "bfg_2", "bfg_416", 'pretty-microwave-583', 'treasured-waterfall-590', 'bfg_852', "bfg_684"], # 0.6812
+    # models = ["bfg_1", "bfg_2", "bfg_3", "bfg_416", 'pretty-microwave-583', 'bfg_684', 'bfg_852'] # 0.6817
+    models = ["bfg_1", "bfg_2", "bfg_3", "bfg_416", 'pretty-microwave-583', 'bfg_684', 'bfg_852']
 )
 
 

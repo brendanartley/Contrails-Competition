@@ -21,8 +21,10 @@ config = SimpleNamespace(
         'bfg_1': -3.02, # Best-Dice: 0.667923 - tu-maxvit_base_tf_512.in21k_ft_in1k
         'bfg_2': -3.90, # Best-Dice: 0.666979 - tu-maxvit_base_tf_512.in21k_ft_in1k
         'bfg_874': -2.90, # Best-Dice: 0.663905 - tu-maxvit_base_tf_512.in21k_ft_in1k
+        'bfg_3': -5.90, # Best-Dice: 0.663819 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k (784)
         'bfg_122': -4.06, # Best-Dice: 0.663042 - tu-maxvit_base_tf_512.in21k_ft_in1k
         'bfg_867': -2.22, # Best-Dice: 0.662304 - tu-maxvit_base_tf_512.in21k_ft_in1k
+        'bfg_416': -1.62, # Best-Dice: 0.662164 - tu-maxvit_base_tf_512.in21k_ft_in1k
         # 'silvery-plasma-621': -3.14, # Best-Dice: 0.662511 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'pretty-microwave-583': -4.50, # Best-Dice: 0.659503 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         # 'twilight-sun-592': -2.10, # Best-Dice: 0.659122 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
@@ -32,6 +34,7 @@ config = SimpleNamespace(
         # 'neat-wind-659': -2.82, # Best-Dice: 0.657312 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'treasured-waterfall-590': -2.62, # Best-Dice: 0.657126 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'bfg_852': -2.62, # Best-Dice: 0.657135 - mit_b4 (800 img_size)
+        'bfg_684': -5.06, # Best-Dice: 0.656235 - tu-resnest269e.in1k (800 img size)
         # 'bright-water-589': -3.94, # Best-Dice: 0.653599 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
         'iconic-field-657': -1.74, # Best-Dice: 0.653737 - mit_b4
         # 'electric-haze-579': 0.34, # Best-Dice: 0.653147 - mit_b4
@@ -40,12 +43,11 @@ config = SimpleNamespace(
         # 'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
         # 'spring-sweep-2': -1.38, # Best-Dice: 0.636749 - mit_tiny
     },
-    # models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'iconic-field-657'], # 0.679
-    models = ["bfg_1", "bfg_2", 'pretty-microwave-583', 'treasured-waterfall-590', 'bfg_612'], # 0.679
+    # models = ["bfg_1", "bfg_2", "bfg_416", 'pretty-microwave-583', 'treasured-waterfall-590', 'bfg_852', "bfg_684"], # 0.6812
+    models = ["bfg_1", "bfg_2", "bfg_416", 'bfg_3', 'treasured-waterfall-590', 'bfg_852', "bfg_684"], # 0.6812
 )
 
-
-known_corr = {'bfg_1': {'bfg_2': 0.9995815, 'bfg_874': 0.9995744, 'bfg_122': 0.9995198, 'bfg_867': 0.999516, 'pretty-microwave-583': 0.9993104, 'treasured-waterfall-590': 0.9993014, 'iconic-field-657': 0.9992986}, 'bfg_2': {'bfg_1': 0.9995815, 'bfg_874': 0.999568, 'bfg_122': 0.9995651, 'bfg_867': 0.9995279, 'pretty-microwave-583': 0.9993357, 'treasured-waterfall-590': 0.9993243, 'iconic-field-657': 0.9993303}, 'bfg_874': {'bfg_1': 0.9995744, 'bfg_2': 0.999568, 'bfg_122': 0.9995621, 'bfg_867': 0.9995204, 'pretty-microwave-583': 0.9993286, 'treasured-waterfall-590': 0.9993176, 'iconic-field-657': 0.9993291}, 'bfg_122': {'bfg_1': 0.9995198, 'bfg_2': 0.9995651, 'bfg_874': 0.9995621, 'bfg_867': 0.9995058, 'pretty-microwave-583': 0.9993064, 'treasured-waterfall-590': 0.9992935, 'iconic-field-657': 0.9992972}, 'bfg_867': {'bfg_1': 0.999516, 'bfg_2': 0.9995279, 'bfg_874': 0.9995204, 'bfg_122': 0.9995058, 'pretty-microwave-583': 0.9992991, 'treasured-waterfall-590': 0.999279, 'iconic-field-657': 0.9993068}, 'pretty-microwave-583': {'bfg_1': 0.9993104, 'bfg_2': 0.9993357, 'bfg_874': 0.9993286, 'bfg_122': 0.9993064, 'bfg_867': 0.9992991, 'treasured-waterfall-590': 0.9994658, 'iconic-field-657': 0.9993536}, 'treasured-waterfall-590': {'bfg_1': 0.9993014, 'bfg_2': 0.9993243, 'bfg_874': 0.9993176, 'bfg_122': 0.9992935, 'bfg_867': 0.999279, 'pretty-microwave-583': 0.9994658, 'iconic-field-657': 0.9993266}, 'iconic-field-657': {'bfg_1': 0.9992986, 'bfg_2': 0.9993303, 'bfg_874': 0.9993291, 'bfg_122': 0.9992972, 'bfg_867': 0.9993068, 'pretty-microwave-583': 0.9993536, 'treasured-waterfall-590': 0.9993266}}
+known_corr =  {'bfg_1': {'bfg_2': 0.9995815, 'bfg_874': 0.9995744, 'bfg_3': 0.9993248, 'bfg_122': 0.9995198, 'bfg_867': 0.999516, 'bfg_416': 0.9995137, 'pretty-microwave-583': 0.9993104, 'bfg_612': 0.9993356, 'treasured-waterfall-590': 0.9993014, 'bfg_852': 0.9993196, 'bfg_684': 0.9993144, 'iconic-field-657': 0.9992986}, 'bfg_2': {'bfg_1': 0.9995815, 'bfg_874': 0.999568, 'bfg_3': 0.9993443, 'bfg_122': 0.9995651, 'bfg_867': 0.9995279, 'bfg_416': 0.99951, 'pretty-microwave-583': 0.9993357, 'bfg_612': 0.99937, 'treasured-waterfall-590': 0.9993243, 'bfg_852': 0.9993433, 'bfg_684': 0.9993336, 'iconic-field-657': 0.9993303}, 'bfg_874': {'bfg_1': 0.9995744, 'bfg_2': 0.999568, 'bfg_3': 0.9993559, 'bfg_122': 0.9995621, 'bfg_867': 0.9995204, 'bfg_416': 0.9995185, 'pretty-microwave-583': 0.9993286, 'bfg_612': 0.9993677, 'treasured-waterfall-590': 0.9993176, 'bfg_852': 0.9993438, 'bfg_684': 0.9993452, 'iconic-field-657': 0.9993291}, 'bfg_3': {'bfg_1': 0.9993248, 'bfg_2': 0.9993443, 'bfg_874': 0.9993559, 'bfg_122': 0.9993168, 'bfg_867': 0.9993118, 'bfg_416': 0.9993063, 'pretty-microwave-583': 0.9993899, 'bfg_612': 0.9993955, 'treasured-waterfall-590': 0.999369, 'bfg_852': 0.9993784, 'bfg_684': 0.9994094, 'iconic-field-657': 0.9993597}, 'bfg_122': {'bfg_1': 0.9995198, 'bfg_2': 0.9995651, 'bfg_874': 0.9995621, 'bfg_3': 0.9993168, 'bfg_867': 0.9995058, 'bfg_416': 0.9995029, 'pretty-microwave-583': 0.9993064, 'bfg_612': 0.999347, 'treasured-waterfall-590': 0.9992935, 'bfg_852': 0.9993292, 'bfg_684': 0.9993079, 'iconic-field-657': 0.9992972}, 'bfg_867': {'bfg_1': 0.999516, 'bfg_2': 0.9995279, 'bfg_874': 0.9995204, 'bfg_3': 0.9993118, 'bfg_122': 0.9995058, 'bfg_416': 0.9995645, 'pretty-microwave-583': 0.9992991, 'bfg_612': 0.9993254, 'treasured-waterfall-590': 0.999279, 'bfg_852': 0.9993115, 'bfg_684': 0.9992881, 'iconic-field-657': 0.9993068}, 'bfg_416': {'bfg_1': 0.9995137, 'bfg_2': 0.99951, 'bfg_874': 0.9995185, 'bfg_3': 0.9993063, 'bfg_122': 0.9995029, 'bfg_867': 0.9995645, 'pretty-microwave-583': 0.9992913, 'bfg_612': 0.9993178, 'treasured-waterfall-590': 0.9992793, 'bfg_852': 0.9992979, 'bfg_684': 0.9992872, 'iconic-field-657': 0.9993072}, 'pretty-microwave-583': {'bfg_1': 0.9993104, 'bfg_2': 0.9993357, 'bfg_874': 0.9993286, 'bfg_3': 0.9993899, 'bfg_122': 0.9993064, 'bfg_867': 0.9992991, 'bfg_416': 0.9992913, 'bfg_612': 0.9993626, 'treasured-waterfall-590': 0.9994658, 'bfg_852': 0.9993449, 'bfg_684': 0.9993337, 'iconic-field-657': 0.9993536}, 'bfg_612': {'bfg_1': 0.9993356, 'bfg_2': 0.99937, 'bfg_874': 0.9993677, 'bfg_3': 0.9993955, 'bfg_122': 0.999347, 'bfg_867': 0.9993254, 'bfg_416': 0.9993178, 'pretty-microwave-583': 0.9993626, 'treasured-waterfall-590': 0.999341, 'bfg_852': 0.9995348, 'bfg_684': 0.9993851, 'iconic-field-657': 0.9994278}, 'treasured-waterfall-590': {'bfg_1': 0.9993014, 'bfg_2': 0.9993243, 'bfg_874': 0.9993176, 'bfg_3': 0.999369, 'bfg_122': 0.9992935, 'bfg_867': 0.999279, 'bfg_416': 0.9992793, 'pretty-microwave-583': 0.9994658, 'bfg_612': 0.999341, 'bfg_852': 0.9993212, 'bfg_684': 0.9993272, 'iconic-field-657': 0.9993266}, 'bfg_852': {'bfg_1': 0.9993196, 'bfg_2': 0.9993433, 'bfg_874': 0.9993438, 'bfg_3': 0.9993784, 'bfg_122': 0.9993292, 'bfg_867': 0.9993115, 'bfg_416': 0.9992979, 'pretty-microwave-583': 0.9993449, 'bfg_612': 0.9995348, 'treasured-waterfall-590': 0.9993212, 'bfg_684': 0.9993811, 'iconic-field-657': 0.9994293}, 'bfg_684': {'bfg_1': 0.9993144, 'bfg_2': 0.9993336, 'bfg_874': 0.9993452, 'bfg_3': 0.9994094, 'bfg_122': 0.9993079, 'bfg_867': 0.9992881, 'bfg_416': 0.9992872, 'pretty-microwave-583': 0.9993337, 'bfg_612': 0.9993851, 'treasured-waterfall-590': 0.9993272, 'bfg_852': 0.9993811, 'iconic-field-657': 0.9993508}, 'iconic-field-657': {'bfg_1': 0.9992986, 'bfg_2': 0.9993303, 'bfg_874': 0.9993291, 'bfg_3': 0.9993597, 'bfg_122': 0.9992972, 'bfg_867': 0.9993068, 'bfg_416': 0.9993072, 'pretty-microwave-583': 0.9993536, 'bfg_612': 0.9994278, 'treasured-waterfall-590': 0.9993266, 'bfg_852': 0.9994293, 'bfg_684': 0.9993508}}
 
 def get_dice_correlation(m1, m2):
     # Define Metric
@@ -97,7 +99,7 @@ def get_correlation_dict(models):
             corr_dict[m1][m2] = dice_corr
             corr_dict[m2][m1] = dice_corr
 
-    print(corr_dict)
+    print("known_corr = ", corr_dict)
     return corr_dict
 
 def save_correlation_plot(corr_dict, models):

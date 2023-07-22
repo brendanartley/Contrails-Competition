@@ -207,17 +207,6 @@ class CustomModule(pl.LightningModule):
             tmp_model = torch.load(self.hparams.model_weights)
             model.load_state_dict(tmp_model.state_dict())
 
-        # Testing: Freezing BN Layers in encoder
-        for module in model.encoder.modules():
-            # print(module)
-            if isinstance(module, nn.BatchNorm2d):
-                print("Freezing BN Layer in encoder!")
-                if hasattr(module, 'weight'):
-                    module.weight.requires_grad_(False)
-                if hasattr(module, 'bias'):
-                    module.bias.requires_grad_(False)
-                module.eval()
-
         return model
     
     def _init_optimizer(self):
