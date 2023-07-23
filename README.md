@@ -10,11 +10,13 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 - ReplkNet as encoder?
     - https://github.com/DingXiaoH/RepLKNet-pytorch/tree/main
+    - Accessing intermeditate outputs
+        - https://web.stanford.edu/~nanbhas/blog/forward-hooks-pytorch/
+        - https://medium.com/the-owl/using-forward-hooks-to-extract-intermediate-layer-outputs-from-a-pre-trained-model-in-pytorch-1ec17af78712
 
 - Make Unet Better
     - UNeXt? https://github.com/jeya-maria-jose/UNeXt-pytorch
     - DCSAU-Net? https://github.com/xq141839/DCSAU-Net -->
-
 
 ### GPU Efficiency Notes
 
@@ -67,7 +69,19 @@ CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="tu-resnest269e.in1k" -
 
 CUDA_VISIBLE_DEVICES=1 python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --img_size=1024 --batch_size=1 --lr=1e-4 --val_check_interval=0.10 --precision="32" --seed=5 --fast_dev_run
 
-CUDA_VISIBLE_DEVICES=2 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --model_weights="/data/bartley/gpu_test/models/segmentation/bfg_3.pt" --img_size=768 --batch_size=16 --save_preds --val
+CUDA_VISIBLE_DEVICES=2 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/bfg_6.pt" --model_name="mit_b4" --img_size=1024 --batch_size=16 --save_preds --val
+
+CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/gpu_1.pt" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --batch_size=16 --save_preds --val
+
+CUDA_VISIBLE_DEVICES=0,1,2 nohup python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa --swa_epochs=5 > nohup3.out &
+
+
+CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/bfg_612.pt" --model_name="mit_b4" --img_size=1024 --batch_size=16 --save_preds --val
+
+
+CUDA_VISIBLE_DEVICES=0,1,2 nohup python main.py --model_name="mit_b4" --img_size=1024 --lr=3e-4 --batch_size=3 --accumulate_grad_batches=5 --epochs=15 --swa --swa_epochs=5 > nohup.out &
+
+CUDA_VISIBLE_DEVICES=0,1,2 nohup python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa --swa_epochs=5 > nohup3.out &
 
 
 #### Train on all Training Data (Add --save_preds if you dont want to manually run validation after training)
@@ -97,6 +111,8 @@ CUDA_VISIBLE_DEVICES="" python dice_threshold.py
     except: experiment_name = str(np.random.randint(0,1000))
 ```
 
-CUDA_VISIBLE_DEVICES=0 nohup python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --decoder_type="UnetPlusPlus" --img_size=512 --batch_size=14 --lr=1e-4 --val_check_interval=0.10 --precision="32" --seed=1234 --epochs=12 --no_wandb > nohup.out &
+CUDA_VISIBLE_DEVICES=0 nohup python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --decoder_type="Unet" --img_size=1024 --batch_size=4 --accumulate_batches=4 --lr=2e-4 --val_check_interval=0.10 --precision="32" --seed=1234 --epochs=14 --no_wandb > nohup.out &
 
-CUDA_VISIBLE_DEVICES=1 nohup python main.py --model_name="tu-resnest269e.in1k" --img_size=1024 --batch_size=13 --lr=1e-4 --accumulate_grad_batches=2 --decoder_type="Unet" --lr=1e-4 --val_check_interval=0.10 --seed=888 --epochs=12 --no_wandb > nohup1.out &
+CUDA_VISIBLE_DEVICES=0 nohup python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --decoder_type="Unet" --img_size=1024 --batch_size=3 --accumulate_grad_batches=4 --lr=2e-4 --val_check_interval=0.10 --precision="32" --seed=1234 --epochs=15 --no_wandb > nohup.out &
+
+CUDA_VISIBLE_DEVICES=1 nohup python main.py --model_name="mit_b4" --img_size=1024 --batch_size=8 --lr=2e-4 --accumulate_grad_batches=2 --decoder_type="Unet" --lr=1e-4 --val_check_interval=0.10 --seed=887 --epochs=15 --no_wandb > nohup1.out &
