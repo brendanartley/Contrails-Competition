@@ -36,6 +36,7 @@ def validate(
         rand_scale_prob = config.rand_scale_prob,
         transform = config.transform,
         seed = config.seed,
+        val_fold = config.val_fold,
         )
 
     module = CustomModule(

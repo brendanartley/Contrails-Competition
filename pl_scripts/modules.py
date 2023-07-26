@@ -22,11 +22,12 @@ from .models.my_models import Unet, UnetPlusPlus, MAnet, DeepLabV3Plus
 from .models.custom_models import CustomUnet
 
 class CustomDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, img_size, train=True, transform=None):
+    def __init__(self, data_dir, img_size, val_fold=1, train=True, transform=None):
         self.data_dir = data_dir
         self.trn = train
         self.transform = transform
         self.img_size = img_size
+        self.val_fold = val_fold
         
         # Resize transform for IMG ONLY (so mask is resized only once)
         if img_size != 256:
@@ -39,14 +40,13 @@ class CustomDataset(torch.utils.data.Dataset):
 
     def load_records(self):
 
-        train_df = pd.read_csv(self.data_dir + "train_df.csv")
-        valid_df = pd.read_csv(self.data_dir + "valid_df.csv")
+        df = pd.read_csv(self.data_dir + "df.csv")
 
-        # Train on all data
+        # Training / Validation
         if self.trn == True:
-            return train_df["record_id"].values
+            return df[df["fold"] != self.val_fold]["record_id"].values
         else:
-            return valid_df["record_id"].values
+            return df[df["fold"] == self.val_fold]["record_id"].values
     
     def __getitem__(self, index):
         fpath = str(self.records[index])
@@ -86,6 +86,7 @@ class CustomDataModule(pl.LightningDataModule):
         rand_scale_prob: float,
         transform: bool,
         seed: int,
+        val_fold: int,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -118,6 +119,7 @@ class CustomDataModule(pl.LightningDataModule):
             data_dir=self.hparams.data_dir, 
             train=train,
             img_size=self.hparams.img_size,
+            val_fold=self.hparams.val_fold,
             transform=transform
             )
     
@@ -287,6 +289,7 @@ class CustomModule(pl.LightningModule):
     
     def _shared_step(self, batch, stage, batch_idx):
         x, y, fpath = batch
+
         y_logits = self(x)
         loss = self.loss_fn(y_logits, y)
 

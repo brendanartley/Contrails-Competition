@@ -37,6 +37,7 @@ config = SimpleNamespace(
     mask_downsample="BILINEAR",
     swa = False,
     swa_epochs = 3,
+    val_fold = 1,
     # -- Trainer Config --
     accelerator = "gpu",
     fast_dev_run = False,
@@ -52,6 +53,7 @@ config = SimpleNamespace(
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--val_fold", type=int, default=config.val_fold, help="Fold to do validation on.")
     parser.add_argument('--val', action='store_true', help='Wether to do a validation run.')
     parser.add_argument('--swa', type=bool, default=config.swa, help='Stochastic weight average (starts 1/2 way through training).')
     parser.add_argument("--swa_epochs", type=int, default=config.swa_epochs, help="Number of SWA epochs to do.")
