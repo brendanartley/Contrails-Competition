@@ -46,12 +46,12 @@ config = SimpleNamespace(
         # 'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
         # 'spring-sweep-2': -1.38, # Best-Dice: 0.636749 - mit_tiny
     },
-    models = "bfg_1|bfg_2|bfg_416|bfg_5|bfg_852|gpu_1|pretty-microwave-583".split("|"), # 0.682
-    # models = [
-    #     "bfg_1|bfg_416|gpu_1".split("|"),
-    #     "bfg_2|bfg_5|gpu_1".split("|"),
-    #     "bfg_416|bfg_5|gpu_1".split("|"),
-    # ]
+    # models = "bfg_1|bfg_2|bfg_416|bfg_5|bfg_852|gpu_1|pretty-microwave-583".split("|"), # 0.682
+    models = [
+        "bfg_1|bfg_416|gpu_1".split("|"),
+        "bfg_2|bfg_5|gpu_1".split("|"),
+        "bfg_416|bfg_5|gpu_1".split("|"),
+    ]
 )
 
 
@@ -261,8 +261,8 @@ def main():
     # all_thresholds = get_best_thresholds(all_thresholds)
 
     # Ensemble
-    ensemble_score = dice_ensemble(all_thresholds, config.models, log=True)
-    # ensemble_score = nested_dice_ensemble(all_thresholds, config.models, log=True)
+    # ensemble_score = dice_ensemble(all_thresholds, config.models, log=True)
+    ensemble_score = nested_dice_ensemble(all_thresholds, config.models, log=True)
     print("Final: ", ensemble_score)
 
     # Testing all combinations

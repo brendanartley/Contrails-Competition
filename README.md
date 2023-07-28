@@ -28,7 +28,7 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
     - 9 mit_b4 models (800 img_size, 14 epochs, SWA?)
     - Done: 1
     """
-    TODO
+    CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=16 --lr=1e-4 --val_fold=1 --no_wandb > nohup.out &
     """
 
 - Train larger model on Sunny
@@ -39,7 +39,9 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
     - V1 - [maxvit512s (512), maxvit512s (512), maxvit384s (784), resnests (1024), mit_b4s (800)]
     - V2 - [maxvit512s (512), maxvit384s (784), maxvit384s (784), resnests (1024), mit_b4s (800)]
 
-- Note: Could embed 1 vit model in resnest/mit_b4 ensembles to give more weight to these models? 
+- Nested 9 Fold ensemble
+    - V3 - [Fold-1, Fold-2, Fold-3, Fold-4, Fold-5, Fold-6, Fold-7]
+    - V4 - [Fold-1, Fold-2, Fold-3, Fold-4, Fold-5, Fold-6, Fold-7]
 
 ### GPU Efficiency Notes
 
@@ -80,7 +82,21 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 Use nohup. This means the script runs even when SSH is closed.
 
-nohup CUDA_VISIBLE_DEVICES=0 python main.py &
+`nohup CUDA_VISIBLE_DEVICES=0 python main.py &`
+
+For chaining with nohup, write commands in a shell script and call with `NAME.sh &!`
+
+```
+CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="tu-resnest269e.in1k" --fast_dev_run > nohup.out
+CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="tu-resnest269e.in1k" --fast_dev_run > nohup1.out
+CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="tu-resnest269e.in1k" --fast_dev_run > nohup2.out
+```
+
+### Improvenments
+
+Need to use checkpointing for long training runs.
+    - This will enable the usage of pausing and restarting long training runs
+    - https://pytorch-lightning.readthedocs.io/en/1.6.2/common/checkpointing.html
 
 ### Commands
 
@@ -90,30 +106,9 @@ CUDA_VISIBLE_DEVICES="" python model_correlation.py
 CUDA_VISIBLE_DEVICES="" nohup python dice_threshold.py > nohup2.out &
 
 
-
-CUDA_VISIBLE_DEVICES=0 python main.py --decoder_type="CustomUnet" --model_name="tu-resnest26d" --fast_dev_run
-
-CUDA_VISIBLE_DEVICES=3 python main.py --model_name="tu-resnest269e.in1k" --decoder_type="UnetPlusPlus" --batch_size=16 --lr=1e-4 --no_wandb
-CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="tu-resnest269e.in1k" --decoder_type="UnetPlusPlus" --batch_size=16 --lr=1e-4 > nohup.out &
-
-CUDA_VISIBLE_DEVICES=1 python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --img_size=1024 --batch_size=1 --lr=1e-4 --val_check_interval=0.10 --precision="32" --seed=5 --fast_dev_run
-
-CUDA_VISIBLE_DEVICES=2 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/bfg_6.pt" --model_name="mit_b4" --img_size=1024 --batch_size=16 --save_preds --val
-
-CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/gpu_1.pt" --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --batch_size=16 --save_preds --val
-
-CUDA_VISIBLE_DEVICES=0,1,2 nohup python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa --swa_epochs=5 > nohup3.out &
+CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=16 --lr=1e-4 --val_fold=1 --no_wandb > nohup.out &
 
 
-CUDA_VISIBLE_DEVICES=3 python main.py --model_weights="/data/bartley/gpu_test/models/segmentation/bfg_612.pt" --model_name="mit_b4" --img_size=1024 --batch_size=16 --save_preds --val
-
-
-CUDA_VISIBLE_DEVICES=1,2,3 nohup python main.py --model_name="mit_b4" --img_size=1024 --lr=4e-4 --batch_size=2 --accumulate_grad_batches=7 --epochs=17 --swa=True --swa_epochs=5 > nohup.out &
-
-
-CUDA_VISIBLE_DEVICES=1,2,3 python main.py --model_name="tu-resnest269e.in1k" --img_size=1024 --lr=3e-4 --batch_size=2 --accumulate_grad_batches=7 --epochs=15 --swa=True --swa_epochs=5 --no_wandb
-
-CUDA_VISIBLE_DEVICES=1,2,3 nohup python main.py --model_name="tu-resnest269e.in1k" --img_size=1024 --lr=2e-4 --batch_size=3 --accumulate_grad_batches=5 --epochs=16 --swa=True --swa_epochs=5 > nohup.out &
 
 
 #### Train on all Training Data (Add --save_preds if you dont want to manually run validation after training)
@@ -143,12 +138,11 @@ CUDA_VISIBLE_DEVICES="" python dice_threshold.py
     except: experiment_name = "fold_" + config.val_fold + "_" + str(np.random.randint(0,1000))
 ```
 
-CUDA_VISIBLE_DEVICES=2 nohup python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --img_size=512 --batch_size=14 --lr=15e-5 --val_check_interval=0.10 --precision="32" --seed=5 --epochs=13 --no_wandb --val_fold=4 > nohup.out &
+CUDA_VISIBLE_DEVICES=1,2,3 nohup python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa=True --swa_epochs=5 --val_fold=5 > nohup.out &
 
-CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --img_size=512 --batch_size=14 --lr=15e-5 --val_check_interval=0.10 --precision="32" --seed=5 --epochs=13 --no_wandb --val_fold=5 > nohup1.out &
+CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=16 --lr=1e-4 --val_fold=1 --no_wandb > nohup.out &
+CUDA_VISIBLE_DEVICES=0 python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=4 --accumulate_grad_batches=4 --lr=2e-4 --val_fold=1 --no_wandb
 
-CUDA_VISIBLE_DEVICES=1,2,3 nohup python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa=True --swa_epochs=5 --val_fold=3 > nohup.out &
+## Sat Morning
 
-CUDA_VISIBLE_DEVICES=0 nohup python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --img_size=512 --batch_size=14 --lr=15e-5 --val_check_interval=0.10 --precision="32" --seed=5 --epochs=13 --no_wandb --val_fold=6 > nohup.out &
-
-CUDA_VISIBLE_DEVICES=1 nohup python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --img_size=512 --batch_size=14 --lr=15e-5 --val_check_interval=0.10 --precision="32" --seed=5 --epochs=13 --no_wandb --val_fold=7 > nohup.out &
+CUDA_VISIBLE_DEVICES=1,2,3 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa=True --swa_epochs=5 --val_fold=6 && CUDA_VISIBLE_DEVICES=1,2,3 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa=True --swa_epochs=5 --val_fold=7
