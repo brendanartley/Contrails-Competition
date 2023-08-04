@@ -4,29 +4,39 @@ Code for ICRGW.
 
 Test w/ only contrails data (1/2 the size), and train final model on all the data.
 
+### Final Submission Options
+
+V1. Each fold is nested ([f1], [f2], [f3], ..., [f9])
+V2. Overweight 512 ([m1f1-5], [m1f6-10], [m2], [m3], [m4])
+V3. Overweight 768 ([m1], [m2f1-5], [m2f-10], [m3], [m4])
+
 ### Ideas
 
 - Train model on 9 folds
     - 9 maxvit 384 models (768 img_size, trained on small GPU, w/ SWA, 15 epochs)
-    - Done: 1
+    - Done: 8,9,(1 w/ new seed)
     """
     CUDA_VISIBLE_DEVICES=1,2,3 nohup python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa=True --swa_epochs=5 --val_fold=2 > nohup.out &
     """
 
     - 9 tu-maxvit_base_tf_512.in21k_ft_in1k models (512 img_size, 13 epochs, no SWA, bfg server)
-    - Done: 1,2,3,4,5
+    - Done
     """
     CUDA_VISIBLE_DEVICES=2 nohup python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --img_size=512 --batch_size=14 --lr=15e-5 --val_check_interval=0.10 --precision="32" --seed=5 --epochs=13 --no_wandb --val_fold=2 > nohup.out &
+
+    CUDA_VISIBLE_DEVICES=0 python main.py --model_name="tu-maxvit_base_tf_512.in21k_ft_in1k" --model_weights="/data/bartley/gpu_test/models/backup_final_models/fold_10_867_tu-maxvit_base_tf_512.in21k_ft_in1k.pt" --img_size=512 --batch_size=8 --precision="32" --save_preds --val
     """
 
+    C:\dev\gpu_test\backup_final_models\fold_10_867_tu-maxvit_base_tf_512.in21k_ft_in1k.pt
+
     - 9 tu-resnest269e.in1k models (1024 img_size, 14 epochs, no SWA, bfg server)
-    - Done: 1
+    - TODO: 7,8,9
     """
     CUDA_VISIBLE_DEVICES=3 python main.py --model_name="tu-resnest269e.in1k" --img_size=1024 --batch_size=14 --lr=15e-5 --epochs=14 --val_fold=1 --no_wandb
     """
 
     - 9 mit_b4 models (800 img_size, 14 epochs, SWA?)
-    - Done: 1
+    - TODO: 8, 9
     """
     CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=16 --lr=1e-4 --val_fold=1 --no_wandb > nohup.out &
     """
@@ -35,13 +45,13 @@ Test w/ only contrails data (1/2 the size), and train final model on all the dat
 
 ### Final Ensemble Ideas
 
-- Nested 5 model ensemble
-    - V1 - [maxvit512s (512), maxvit512s (512), maxvit384s (784), resnests (1024), mit_b4s (800)]
-    - V2 - [maxvit512s (512), maxvit384s (784), maxvit384s (784), resnests (1024), mit_b4s (800)]
+- Nested 5 model ensemble (need to figure out what to do with even number here..)
+    - V1 - [5 maxvit512s (512), 4 maxvit512s (512), 9 maxvit384s (784), 9 resnests (1024), 9 mit_b4s (800)]
+    - V2 - [9 maxvit512s (512), 5 maxvit384s (784), 4 maxvit384s (784), 9 resnests (1024), 9 mit_b4s (800)]
+    - Use another pre-trained maxvit512, train another seed for 384. This will get to odd number for both.
 
-- Nested 9 Fold ensemble
-    - V3 - [Fold-1, Fold-2, Fold-3, Fold-4, Fold-5, Fold-6, Fold-7]
-    - V4 - [Fold-1, Fold-2, Fold-3, Fold-4, Fold-5, Fold-6, Fold-7]
+- Nested 9-nested Fold ensemble [(fold 1 ens), (fold 2 ens)... (fold 9 ens)]
+    - V3 - [9 maxvit512s (512), 9 maxvit384s (784), 9 resnests (1024)]
 
 ### GPU Efficiency Notes
 
@@ -109,8 +119,6 @@ CUDA_VISIBLE_DEVICES="" nohup python dice_threshold.py > nohup2.out &
 CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=16 --lr=1e-4 --val_fold=1 --no_wandb > nohup.out &
 
 
-
-
 #### Train on all Training Data (Add --save_preds if you dont want to manually run validation after training)
 CUDA_VISIBLE_DEVICES=2 python main.py --model_name=mit_b5 --img_size=512 --lr=8e-4 --batch_size=12 --save_preds
 
@@ -140,9 +148,19 @@ CUDA_VISIBLE_DEVICES="" python dice_threshold.py
 
 CUDA_VISIBLE_DEVICES=1,2,3 nohup python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa=True --swa_epochs=5 --val_fold=5 > nohup.out &
 
-CUDA_VISIBLE_DEVICES=3 nohup python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=16 --lr=1e-4 --val_fold=1 --no_wandb > nohup.out &
-CUDA_VISIBLE_DEVICES=0 python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=4 --accumulate_grad_batches=4 --lr=2e-4 --val_fold=1 --no_wandb
+CUDA_VISIBLE_DEVICES=0 nohup python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=16 --lr=1e-4 --val_fold=2 --no_wandb > nohup.out &
+
+CUDA_VISIBLE_DEVICES=1 nohup python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=16 --lr=1e-4 --val_fold=3 --no_wandb > nohup.out &
+
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name="mit_b4" --img_size=800 --epochs=13 --batch_size=4 --accumulate_grad_batches=4 --lr=2e-4 --val_fold=1 --no_wandb
 
 ## Sat Morning
 
-CUDA_VISIBLE_DEVICES=1,2,3 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa=True --swa_epochs=5 --val_fold=6 && CUDA_VISIBLE_DEVICES=1,2,3 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa=True --swa_epochs=5 --val_fold=7
+CUDA_VISIBLE_DEVICES=1,2,3 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa=True --swa_epochs=5 --val_fold=8 && CUDA_VISIBLE_DEVICES=1,2,3 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=2e-4 --batch_size=4 --accumulate_grad_batches=4 --epochs=15 --swa=True --swa_epochs=5 --val_fold=9 && 
+
+CUDA_VISIBLE_DEVICES=0 python main.py --model_name="tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k" --img_size=768 --lr=1e-4 --batch_size=15 --epochs=15 --swa=True --swa_epochs=5 --val_fold=1 --seed=971
+
+CUDA_VISIBLE_DEVICES=0 python main.py --model_name="tu-resnest269e.in1k" --img_size=1024 --batch_size=14 --lr=15e-5 --epochs=14 --val_fold=7 --no_wandb &&
+CUDA_VISIBLE_DEVICES=0 python main.py --model_name="tu-resnest269e.in1k" --img_size=1024 --batch_size=14 --lr=15e-5 --epochs=14 --val_fold=8 --no_wandb
+
+CUDA_VISIBLE_DEVICES=1 python main.py --model_name="tu-resnest269e.in1k" --img_size=1024 --batch_size=14 --lr=15e-5 --epochs=14 --val_fold=9 --no_wandb

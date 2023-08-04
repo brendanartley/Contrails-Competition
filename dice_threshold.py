@@ -17,43 +17,26 @@ config = SimpleNamespace(
     device = torch.device("cpu"),
     # Known Thresholds
     all_thresholds = {
-        'gpu_1': -4.14, # Best-Dice: 0.671748 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k (768, 15 epochs w/ SWA)
-        'bfg_1': -3.02, # Best-Dice: 0.667923 - tu-maxvit_base_tf_512.in21k_ft_in1k
-        'bfg_2': -3.90, # Best-Dice: 0.666979 - tu-maxvit_base_tf_512.in21k_ft_in1k
-        'bfg_874': -2.90, # Best-Dice: 0.663905 - tu-maxvit_base_tf_512.in21k_ft_in1k
-        'bfg_3': -5.90, # Best-Dice: 0.663819 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k (784)
-        'bfg_122': -4.06, # Best-Dice: 0.663042 - tu-maxvit_base_tf_512.in21k_ft_in1k
-        'bfg_867': -2.22, # Best-Dice: 0.662304 - tu-maxvit_base_tf_512.in21k_ft_in1k
-        'bfg_416': -1.62, # Best-Dice: 0.662164 - tu-maxvit_base_tf_512.in21k_ft_in1k
-        'silvery-plasma-621': -3.14, # Best-Dice: 0.662511 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'bfg_6': -2.66, # Best-Dice: 0.661204 - mit_b4 (1024 img_size)
-        'bfg_5': -6.90, # Best-Dice: 0.660798 - tu-resnest269e.in1k (1024 img size - didnt train long enough)
-        'bfg_4': -1.50, # Best-Dice: 0.659906 - tu-maxvit_base_tf_512.in21k_ft_in1k (UnetPlusPlus)
-        'pretty-microwave-583': -4.50, # Best-Dice: 0.659503 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'twilight-sun-592': -2.10, # Best-Dice: 0.659122 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'bfg_612': -3.30, # Best-Dice: 0.657971 - mit_b4 (800 img_size)
-        'denim-blaze-658': -3.58, # Best-Dice: 0.657714 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'fresh-bee-660': -2.82, # Best-Dice: 0.657683 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'neat-wind-659': -2.82, # Best-Dice: 0.657312 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'treasured-waterfall-590': -2.62, # Best-Dice: 0.657126 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        'bfg_852': -2.62, # Best-Dice: 0.657135 - mit_b4 (800 img_size)
-        # 'bfg_684': -5.06, # Best-Dice: 0.656235 - tu-resnest269e.in1k (800 img size)
-        # 'bright-water-589': -3.94, # Best-Dice: 0.653599 - tu-maxxvitv2_rmlp_base_rw_384.sw_in12k_ft_in1k
-        # 'iconic-field-657': -1.74, # Best-Dice: 0.653737 - mit_b4
-        # 'electric-haze-579': 0.34, # Best-Dice: 0.653147 - mit_b4
-        # 'light-valley-599': -1.38, # Best-Dice: 0.652941 - mit_b4
-        # 'olive-gorge-380': -4.1, # Best-Dice: 0.652049 - mit_b4
-        # 'peachy-dream-519': -3.94, # Best-Dice: 0.649420 - mit_b4
-        # 'spring-sweep-2': -1.38, # Best-Dice: 0.636749 - mit_tiny
+        # Vit 512s
+        'fold_1_867_tu-maxvit_base_tf_512.in21k_ft_in1k': -3.02, # Best-Dice: 0.667923
+        'fold_2_867_tu-maxvit_base_tf_512.in21k_ft_in1k': -3.30, # Best-Dice: 0.693182
+        'fold_3_867_tu-maxvit_base_tf_512.in21k_ft_in1k': -1.98, # Best-Dice: 0.681371
+        'fold_4_867_tu-maxvit_base_tf_512.in21k_ft_in1k': 0.30, # Best-Dice: 0.688732
+        'fold_5_867_tu-maxvit_base_tf_512.in21k_ft_in1k': -1.98, # Best-Dice: 0.691648
+        'fold_6_867_tu-maxvit_base_tf_512.in21k_ft_in1k': 0.34, # Best-Dice: 0.685769
+        'fold_7_867_tu-maxvit_base_tf_512.in21k_ft_in1k': -1.94, # Best-Dice: 0.682107
+        'fold_8_867_tu-maxvit_base_tf_512.in21k_ft_in1k': -2.02, # Best-Dice: 0.690385
+        'fold_9_867_tu-maxvit_base_tf_512.in21k_ft_in1k': -0.82, # Best-Dice: 0.679808
+        'fold_10_867_tu-maxvit_base_tf_512.in21k_ft_in1k': -3.90, # Best-Dice: 0.666979
+        # MIT B4s
+        #
+        # Resnests
+        # 
+        # MaxvitV2s
+        # 
     },
-    # models = "bfg_1|bfg_2|bfg_416|bfg_5|bfg_852|gpu_1|pretty-microwave-583".split("|"), # 0.682
-    models = [
-        "bfg_1|bfg_416|gpu_1".split("|"),
-        "bfg_2|bfg_5|gpu_1".split("|"),
-        "bfg_416|bfg_5|gpu_1".split("|"),
-    ]
+    models = ["fold_{}_867_tu-maxvit_base_tf_512.in21k_ft_in1k".format(i) for i in range(1, 11)]
 )
-
 
 def get_dice_score(model_name, threshold=0.5):
     # Define Metric
@@ -258,12 +241,12 @@ def main():
 
     # Get thresholds
     all_thresholds = config.all_thresholds
-    # all_thresholds = get_best_thresholds(all_thresholds)
+    all_thresholds = get_best_thresholds(all_thresholds)
 
     # Ensemble
     # ensemble_score = dice_ensemble(all_thresholds, config.models, log=True)
-    ensemble_score = nested_dice_ensemble(all_thresholds, config.models, log=True)
-    print("Final: ", ensemble_score)
+    # ensemble_score = nested_dice_ensemble(all_thresholds, config.models, log=True)
+    # print("Final: ", ensemble_score)
 
     # Testing all combinations
     # all_thresholds = config.all_thresholds
