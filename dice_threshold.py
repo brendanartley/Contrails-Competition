@@ -29,13 +29,41 @@ config = SimpleNamespace(
         'fold_9_867_tu-maxvit_base_tf_512.in21k_ft_in1k': -0.82, # Best-Dice: 0.679808
         'fold_10_867_tu-maxvit_base_tf_512.in21k_ft_in1k': -3.90, # Best-Dice: 0.666979
         # MIT B4s
-        #
+        'fold_1_684_mit_b4': -2.62, # Best-Dice: 0.657135
+        'fold_2_684_mit_b4': -2.78, # Best-Dice: 0.687846
+        'fold_3_684_mit_b4': -1.54, # Best-Dice: 0.684042
+        'fold_4_684_mit_b4': -0.62, # Best-Dice: 0.693071
+        'fold_5_684_mit_b4': -0.94, # Best-Dice: 0.694887
+        'fold_6_684_mit_b4': -0.98, # Best-Dice: 0.687300
+        'fold_7_684_mit_b4': -2.82, # Best-Dice: 0.685679
+        'fold_8_684_mit_b4': -2.26, # Best-Dice: 0.691759
+        'fold_9_684_mit_b4': 0.34, # Best-Dice: 0.682070
         # Resnests
-        # 
+        'fold_1_684_tu-resnest269e.in1k': -4.54, # Best-Dice: 0.657075
+        'fold_2_684_tu-resnest269e.in1k': -2.66, # Best-Dice: 0.689987
+        'fold_3_684_tu-resnest269e.in1k': -1.82, # Best-Dice: 0.687670
+        'fold_4_684_tu-resnest269e.in1k': -1.10, # Best-Dice: 0.693645
+        'fold_5_684_tu-resnest269e.in1k': 0.02, # Best-Dice: 0.697737
+        'fold_6_684_tu-resnest269e.in1k': -2.14, # Best-Dice: 0.687746
+        'fold_7_684_tu-resnest269e.in1k': -4.02, # Best-Dice: 0.685623
+        'fold_8_684_tu-resnest269e.in1k': -1.58, # Best-Dice: 0.691577
+        'fold_9_684_tu-resnest269e.in1k': -1.86, # Best-Dice: 0.683122
         # MaxvitV2s
-        # 
+        'fold_1_768': -4.14, # Best-Dice: 0.671748
+        'fold_2_768': -3.18, # Best-Dice: 0.691027
+        'fold_3_768': -1.98, # Best-Dice: 0.689529
+        'fold_4_768': -1.46, # Best-Dice: 0.693618
+        'fold_5_768': -1.06, # Best-Dice: 0.699253
+        'fold_6_768': 0.26, # Best-Dice: 0.690219
+        'fold_7_768': -2.02, # Best-Dice: 0.687566
+        # fold_8
+        # fold_9
+        'fold_10_768': -7.18, # Best-Dice: 0.668784
     },
-    models = ["fold_{}_867_tu-maxvit_base_tf_512.in21k_ft_in1k".format(i) for i in range(1, 11)]
+    # models = ["fold_{}_867_tu-maxvit_base_tf_512.in21k_ft_in1k".format(i) for i in range(1, 11)],
+    # models = ["fold_{}_684_mit_b4".format(i) for i in range(1, 10)],
+    # models = ["fold_{}_684_tu-resnest269e.in1k".format(i) for i in range(1, 10)],
+    models = ["fold_{}_768".format(i) for i in [10]],
 )
 
 def get_dice_score(model_name, threshold=0.5):
