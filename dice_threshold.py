@@ -56,14 +56,14 @@ config = SimpleNamespace(
         'fold_5_768': -1.06, # Best-Dice: 0.699253
         'fold_6_768': 0.26, # Best-Dice: 0.690219
         'fold_7_768': -2.02, # Best-Dice: 0.687566
-        # fold_8
-        # fold_9
+        'fold_8_768': -1.30, # Best-Dice: 0.695050
+        'fold_9_768': -1.14, # Best-Dice: 0.685904
         'fold_10_768': -7.18, # Best-Dice: 0.668784
     },
     # models = ["fold_{}_867_tu-maxvit_base_tf_512.in21k_ft_in1k".format(i) for i in range(1, 11)],
     # models = ["fold_{}_684_mit_b4".format(i) for i in range(1, 10)],
     # models = ["fold_{}_684_tu-resnest269e.in1k".format(i) for i in range(1, 10)],
-    models = ["fold_{}_768".format(i) for i in [10]],
+    models = ["fold_{}_768".format(i) for i in [9]],
 )
 
 def get_dice_score(model_name, threshold=0.5):
