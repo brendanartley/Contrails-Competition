@@ -6,7 +6,7 @@ This repository contains code for the 58th place solution in the [Google Researc
 <img src="./imgs/model.png" alt="Model Architecture" width="800">
 </h1>
 
-### Improvements
+### Where I need to Improve
 
 Use a different seed for each model regardless of the validation fold
 - Seed changes data loading and initial model weights (which will result in more different models for the ensemble)
